@@ -245,6 +245,26 @@ Follow these steps to get the project running locally for development.
 - **PgAdmin**: `http://localhost:5050`
 - **RabbitMQ Management**: Mapped via Traefik. Check `docker-compose.dev.yml` for the path rule (`/rabbitmq`) on the proxy port.
 
+### Default Admin User
+
+Upon first startup, the application automatically creates a default administrator user with the following credentials (configured in `api/app/configs/config.yml`):
+
+- **Email**: `admin@gmail.com`
+- **Username**: `admin`
+- **Password**: `admin_password`
+
+**⚠️ Security Note**: For production deployments, make sure to:
+
+1. Change the default admin password immediately after first login
+2. Update the `USER.FIRST_USER_*` values in your configuration files
+3. Consider disabling open registration by setting `USER.OPEN_REGISTRATION: false`
+
+You can use these credentials to:
+
+- Access the API authentication endpoints
+- Test the API using the interactive documentation at `/docs`
+- Manage user roles and permissions through the RBAC system
+
 ## ⚙️ Configuration
 
 Application configuration is managed through environment variables, which are loaded from a `.env` file. Refer to `.env.example` for the full list of available variables.
