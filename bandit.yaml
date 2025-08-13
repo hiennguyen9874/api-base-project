@@ -1,0 +1,2 @@
+exclude_dirs: ["*/tests/*", "*/.tox/*", "*/.venv/*", "*/.git/*", "migrations", "alembic", "versions", "__pycache__", "env", ".env"]
+skips: ['B101']

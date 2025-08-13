@@ -1,0 +1,105 @@
+---
+# Docker Installation and Configuration Tasks
+
+- name: Check if Docker is already installed
+  ansible.builtin.command: docker --version
+  register: docker_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Update apt package index
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_installed.failed
+  become: true
+
+- name: Install required packages for Docker
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+  when: docker_installed.failed
+  become: true
+
+- name: Add Docker's official GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: docker_installed.failed
+  become: true
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable'
+    state: present
+  when: docker_installed.failed
+  become: true
+
+- name: Install Docker CE
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: true
+  when: docker_installed.failed
+  become: true
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: '{{ ansible_user }}'
+    groups: docker
+    append: true
+  become: true
+
+- name: Start and enable Docker service
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+  become: true
+
+- name: Install Docker Compose
+  ansible.builtin.get_url:
+    url: 'https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-linux-x86_64'
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  become: true
+
+- name: Create docker-compose symlink
+  ansible.builtin.file:
+    src: /usr/local/bin/docker-compose
+    dest: /usr/bin/docker-compose
+    state: link
+  become: true
+
+- name: Verify Docker installation
+  ansible.builtin.command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Verify Docker Compose installation
+  ansible.builtin.command: docker-compose --version
+  register: docker_compose_version_check
+  changed_when: false
+
+- name: Display Docker versions
+  ansible.builtin.debug:
+    msg:
+      - 'Docker version: {{ docker_version.stdout }}'
+      - 'Docker Compose version: {{ docker_compose_version_check.stdout }}'
+
+- name: Test Docker functionality
+  ansible.builtin.command: docker run --rm hello-world
+  register: docker_test
+  changed_when: false
+
+- name: Confirm Docker is working
+  ansible.builtin.debug:
+    msg: 'Docker installation successful and functional'
+  when: "'Hello from Docker!' in docker_test.stdout"

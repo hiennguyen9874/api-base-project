@@ -1,0 +1,99 @@
+---
+# Standalone Rollback Playbook for FastAPI Base Project System
+
+- name: Rollback FastAPI Base Project Application
+  hosts: "{{ target_environment | default('production') }}"
+  gather_facts: true
+  become: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    # Dynamic variables from environment or defaults
+    deploy_host: "{{ lookup('env', 'DEPLOY_HOST') }}"
+    deploy_user: "{{ lookup('env', 'DEPLOY_USER') }}"
+    deploy_ssh_port: "{{ lookup('env', 'DEPLOY_SSH_PORT') | default(22) }}"
+    deploy_ssh_key_file: "{{ lookup('env', 'DEPLOY_SSH_KEY_FILE') | default('~/.ssh/deploy_key') }}"
+  vars_files:
+    - '{{ playbook_dir }}/../group_vars/all.yml'
+    - '{{ playbook_dir }}/../group_vars/{{ target_environment }}.yml'
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - deploy_host is defined and deploy_host != ""
+          - deploy_user is defined and deploy_user != ""
+        fail_msg: 'Required rollback variables are missing'
+
+    - name: Display rollback information
+      ansible.builtin.debug:
+        msg:
+          - '🔄 Starting FastAPI Base Project Rollback'
+          - 'Environment: {{ app_environment }}'
+          - 'Target: {{ deploy_host }}:{{ deploy_ssh_port }}'
+          - 'User: {{ deploy_user }}'
+
+    - name: Verify server connection
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: Display connection status
+      ansible.builtin.debug:
+        msg: '✅ Server connection verified for rollback'
+      when: ping_result is succeeded
+
+    - name: Confirm rollback operation
+      ansible.builtin.pause:
+        prompt: 'Are you sure you want to rollback the deployment? (yes/no)'
+      register: rollback_confirmation
+      when: lookup('env', 'ANSIBLE_FORCE_ROLLBACK') != 'true'
+
+    - name: Validate rollback confirmation
+      ansible.builtin.assert:
+        that:
+          - rollback_confirmation.user_input | default('yes') | lower == 'yes' or lookup('env', 'ANSIBLE_FORCE_ROLLBACK') == 'true'
+        fail_msg: 'Rollback cancelled by user'
+      when: rollback_confirmation is defined
+
+  tasks:
+    - name: Execute rollback
+      ansible.builtin.include_role:
+        name: rollback
+
+    - name: Verify rollback success
+      ansible.builtin.include_role:
+        name: health_check
+      vars:
+        health_check_skip: false
+      when: rollback_success | default(false)
+
+  post_tasks:
+    - name: Generate rollback summary
+      ansible.builtin.set_fact:
+        rollback_operation_summary:
+          environment: '{{ app_environment }}'
+          server: '{{ ansible_host }}'
+          status: "{{ 'SUCCESS' if (rollback_success | default(false)) else 'FAILED' }}"
+          timestamp: '{{ ansible_date_time.iso8601 }}'
+          backup_used: "{{ latest_backup | default('none') }}"
+          backup_available: '{{ backup_available | default(false) }}'
+
+    - name: Display rollback summary
+      ansible.builtin.debug:
+        msg:
+          - '📋 Rollback Summary'
+          - 'Environment: {{ rollback_operation_summary.environment }}'
+          - 'Server: {{ rollback_operation_summary.server }}'
+          - 'Status: {{ rollback_operation_summary.status }}'
+          - 'Timestamp: {{ rollback_operation_summary.timestamp }}'
+          - 'Backup Used: {{ rollback_operation_summary.backup_used }}'
+          - 'Backup Available: {{ rollback_operation_summary.backup_available }}'
+
+    - name: Success notification
+      ansible.builtin.debug:
+        msg: '✅ Rollback completed successfully'
+      when: rollback_success | default(false)
+
+    - name: Failure notification
+      ansible.builtin.debug:
+        msg: '❌ Rollback failed - manual intervention required'
+      when: not (rollback_success | default(false))

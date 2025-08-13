@@ -1,0 +1,125 @@
+---
+# Application Deployment Tasks
+
+- name: Display deployment information
+  ansible.builtin.debug:
+    msg:
+      - 'Starting deployment {{ deployment_id }}'
+      - 'Environment: {{ app_environment }}'
+      - 'Version: {{ app_version }}'
+      - 'Target host: {{ ansible_host }}'
+
+- name: Create deployment directory
+  ansible.builtin.file:
+    path: '{{ deployment_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Create deployment log entry
+  ansible.builtin.lineinfile:
+    path: '{{ deployment_dir }}/deployment.log'
+    line: '{{ ansible_date_time.iso8601 }}: Starting deployment {{ deployment_id }}'
+    create: true
+    mode: '0644'
+
+- name: Check if services are currently running
+  ansible.builtin.shell: 'cd {{ deployment_dir }} && docker-compose ps -q'
+  register: current_services
+  changed_when: false
+  failed_when: false
+
+- name: Create backup if services are running
+  ansible.builtin.include_tasks: backup.yml
+  when: current_services.stdout != ""
+
+- name: Stop current services before deployment
+  ansible.builtin.shell: 'cd {{ deployment_dir }} && docker-compose down'
+  register: stop_services_result
+  changed_when: stop_services_result.rc == 0
+  failed_when: false
+  when: current_services.stdout != ""
+
+- name: Display service stop status
+  ansible.builtin.debug:
+    msg: '🛑 Stopped current services for deployment'
+  when: current_services.stdout != "" and stop_services_result.rc == 0
+
+- name: Log service stop in deployment log
+  ansible.builtin.lineinfile:
+    path: '{{ deployment_dir }}/deployment.log'
+    line: '{{ ansible_date_time.iso8601 }}: Stopped services for deployment {{ deployment_id }}'
+    mode: '0644'
+  when: current_services.stdout != ""
+
+- name: Generate docker compose file from template
+  ansible.builtin.template:
+    src: '{{ template_base_path }}/docker-compose.prod.yml.j2'
+    dest: '{{ deployment_dir }}/docker-compose.prod.yml'
+    mode: '{{ security.file_permissions.compose_file | default("0644") }}'
+  no_log: true
+
+- name: Copy supporting configuration files
+  ansible.builtin.copy:
+    src: '{{ playbook_dir }}/../../{{ item }}/'
+    dest: '{{ deployment_dir }}/{{ item }}/'
+    mode: '0644'
+  loop:
+    - pgbouncer
+    - pgadmin
+    - postgres
+    - api/app/configs
+
+- name: Generate environment file from template
+  ansible.builtin.template:
+    src: '{{ template_base_path }}/.env.j2'
+    dest: '{{ deployment_dir }}/.env'
+    mode: '{{ security.file_permissions.env_file | default("0600") }}'
+  no_log: true
+
+- name: Login to GitHub Container Registry
+  community.docker.docker_login:
+    registry: '{{ container_registry }}'
+    username: '{{ github_actor | default(ansible_user) }}'
+    password: '{{ github_token }}'
+  retries: '{{ docker_login_retries }}'
+  delay: 5
+  no_log: true
+
+- name: Pull Docker images with retry
+  community.docker.docker_image:
+    name: '{{ item }}'
+    source: pull
+    force_source: true
+  loop:
+    - '{{ container_registry }}/{{ github_repository }}/api:{{ app_version }}'
+    - '{{ container_registry }}/{{ github_repository }}/web:{{ app_version }}'
+  retries: '{{ image_pull_retries }}'
+  delay: 10
+  register: image_pull_result
+
+- name: Verify images pulled successfully
+  ansible.builtin.debug:
+    msg: '✅ Successfully pulled all Docker images'
+  when: image_pull_result is succeeded
+
+- name: Deploy services with Docker Compose
+  ansible.builtin.shell: |
+    cd {{ deployment_dir }}
+    docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+  register: deploy_result
+  changed_when: true
+
+- name: Log deployment initiation
+  ansible.builtin.lineinfile:
+    path: '{{ deployment_dir }}/deployment.log'
+    line: '{{ ansible_date_time.iso8601 }}: Deployment containers started'
+
+- name: Display deployment status
+  ansible.builtin.debug:
+    msg: '✅ Deployment initiated successfully'
+  when: deploy_result.rc == 0
+
+- name: Fail if deployment failed
+  ansible.builtin.fail:
+    msg: '❌ Deployment failed: {{ deploy_result.stderr }}'
+  when: deploy_result.rc != 0

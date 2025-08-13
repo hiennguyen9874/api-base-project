@@ -1,0 +1,240 @@
+name: Release beta version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: |
+          !!! ONLY DISPATCH ON DEVELOP BRANCH !!!
+          Version to release (Ex: `v0.0.1-beta.1`)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Validate inputs and branch
+  validate:
+    if: contains(github.ref, 'develop')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Expected: v0.0.1-beta.1"
+            exit 1
+          fi
+          echo "✅ Version format is valid: ${{ inputs.version }}"
+
+  # Commit version update
+  commit_new_version:
+    needs: [validate]
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    outputs:
+      commit_sha: ${{ steps.commit.outputs.commit_hash }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update version file
+        run: |
+          python3 scripts/update_version.py ${{ inputs.version }}
+
+      - name: Commit version update
+        id: commit
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: '[GitHub Action] Update version → ${{ inputs.version }}'
+          file_pattern: '**/version.py **/__init__.py **/package.json'
+
+  # Build Docker images in parallel
+  build:
+    needs: [commit_new_version]
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        service: [api, web]
+        include:
+          - service: api
+            context: ./api
+            dockerfile: ./api/Dockerfile.prod
+            platforms: linux/amd64,linux/arm64
+          - service: web
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+            platforms: linux/amd64,linux/arm64
+    outputs:
+      api-image: ${{ steps.meta.outputs.tags }}
+      api-digest: ${{ steps.build.outputs.digest }}
+      web-image: ${{ steps.meta.outputs.tags }}
+      web-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.commit_new_version.outputs.commit_sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+          tags: |
+            type=raw,value=${{ inputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=${{ matrix.service }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:cache
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.service }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:cache,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Generate build summary
+        run: |
+          echo "## 🚀 Build Summary for ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Digest**: ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms**: ${{ matrix.platforms }}" >> $GITHUB_STEP_SUMMARY
+
+  # # Security scanning
+  # security-scan:
+  #   needs: [build]
+  #   runs-on: ubuntu-22.04
+  #   permissions:
+  #     actions: read
+  #     contents: write
+  #     security-events: write
+  #     packages: read
+  #   strategy:
+  #     matrix:
+  #       service: [api, web]
+
+  #   steps:
+  #     - name: Log in to Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Pull Docker image
+  #       run: |
+  #         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ inputs.version }}
+
+  #     - name: Run Trivy vulnerability scanner
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ inputs.version }}
+  #         format: 'sarif'
+  #         output: 'trivy-results-${{ matrix.service }}.sarif'
+
+  #     - name: Upload Trivy scan results
+  #       uses: github/codeql-action/upload-sarif@v3
+  #       if: always()
+  #       with:
+  #         sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+
+  # Create release
+  publish_release:
+    needs: [build]
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-22.04
+    outputs:
+      html_url: ${{ steps.release_drafter.outputs.html_url }}
+      upload_url: ${{ steps.release_drafter.outputs.upload_url }}
+
+    steps:
+      - name: Create GitHub release
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
+        with:
+          version: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          tag: ${{ inputs.version }}
+          publish: false
+          disable-releaser: false
+          disable-autolabeler: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate release summary
+        run: |
+          echo "## 🎉 Beta Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL**: ${{ steps.release_drafter.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Draft (ready for deployment)" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy to staging
+  deploy_staging:
+    needs: [publish_release]
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/deploy-to-server.yml
+    with:
+      environment: staging
+      version: ${{ inputs.version }}
+      health_check_skip: false
+    secrets: inherit
+
+  # Post-deployment verification
+  verify_deployment:
+    needs: [deploy_staging]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Verify deployment success
+        run: |
+          echo "## ✅ Deployment Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Successfully deployed and verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Test the staging deployment" >> $GITHUB_STEP_SUMMARY
+          echo "2. Review the release notes" >> $GITHUB_STEP_SUMMARY
+          echo "3. Publish the release when ready" >> $GITHUB_STEP_SUMMARY

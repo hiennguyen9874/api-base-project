@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-rename-tag",
+    "streetsidesoftware.code-spell-checker",
+    "mikestead.dotenv",
+    "oderwat.indent-rainbow",
+    "christian-kohler.path-intellisense",
+    "ms-vsliveshare.vsliveshare",
+    "ms-ossdata.vscode-pgsql"
+  ]
+}

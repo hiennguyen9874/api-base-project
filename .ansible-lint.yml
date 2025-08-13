@@ -1,0 +1,7 @@
+skip_list:
+  - yaml[line-length]
+
+exclude_paths:
+  - ansible/playbooks/deploy.yml
+  - ansible/playbooks/health-check.yml
+  - ansible/playbooks/rollback.yml

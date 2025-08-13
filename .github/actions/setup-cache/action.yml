@@ -1,0 +1,53 @@
+name: 'Setup Cache'
+description: 'Sets up caching for various package managers and tools'
+
+inputs:
+  cache-type:
+    description: 'Type of cache to setup (python, node, docker)'
+    required: true
+  cache-key:
+    description: 'Additional cache key suffix'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Working directory for dependency files'
+    required: false
+    default: '.'
+
+outputs:
+  cache-hit:
+    description: 'Whether there was a cache hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python cache
+      if: inputs.cache-type == 'python'
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/pre-commit
+        key: python-${{ runner.os }}-${{ hashFiles(format('{0}/**/requirements*.txt', inputs.working-directory), format('{0}/**/.pre-commit-config.yaml', inputs.working-directory)) }}-${{ inputs.cache-key }}
+        restore-keys: |
+          python-${{ runner.os }}-
+
+    - name: Setup Node.js cache
+      if: inputs.cache-type == 'node'
+      id: cache-node
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          node_modules
+        key: node-${{ runner.os }}-${{ hashFiles(format('{0}/**/package-lock.json', inputs.working-directory)) }}-${{ inputs.cache-key }}
+        restore-keys: |
+          node-${{ runner.os }}-
+
+    - name: Setup Docker cache
+      if: inputs.cache-type == 'docker'
+      shell: bash
+      run: |
+        echo "Docker cache is handled by build actions with GitHub Actions cache backend"

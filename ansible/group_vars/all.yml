@@ -1,0 +1,108 @@
+---
+# Common Configuration for All Environments
+
+# Sudo/Become Configuration
+ansible_become_method: sudo
+ansible_become_user: root
+# Note: For production, ensure passwordless sudo is configured
+# For development/staging, ansible_become_pass can be set via vault or prompt
+
+template_base_path: '{{ playbook_dir }}/../templates'
+
+# Runtime deployment variables (can be overridden by environment variables or command line)
+deploy_host: "{{ lookup('env', 'DEPLOY_HOST') | default('localhost') }}"
+deploy_user: "{{ lookup('env', 'DEPLOY_USER') | default('deploy') }}"
+deploy_ssh_port: "{{ lookup('env', 'DEPLOY_SSH_PORT') | default(22) }}"
+deploy_ssh_key_file: "{{ lookup('env', 'DEPLOY_SSH_KEY_FILE') | default('~/.ssh/id_rsa') }}"
+
+# GitHub/CI variables
+github_actor: "{{ lookup('env', 'GITHUB_ACTOR') | default(deploy_user) }}"
+github_token: "{{ lookup('env', 'GITHUB_TOKEN') | default('') }}"
+
+# Application Configuration
+app_version: "{{ lookup('env', 'APP__VERSION') | default('latest') }}"
+github_repository: "{{ lookup('env', 'GITHUB_REPOSITORY') | default('') }}"
+container_registry: 'ghcr.io'
+target_environment: "{{ lookup('env', 'TARGET_ENVIRONMENT') | default('production') }}"
+
+# Deployment Configuration
+deployment_user: '{{ ansible_user }}'
+deployment_strategy: 'zero_downtime'
+backup_retention_days: 7
+max_backup_count: 5
+
+# Docker Configuration
+docker_compose_version: '2.24.0'
+docker_buildx_version: '0.12.0'
+docker_login_retries: 3
+image_pull_retries: 3
+image_pull_timeout: 300
+
+# Service Configuration
+services:
+  api:
+    name: 'api'
+    port: 80
+    health_endpoint: '/health'
+    startup_timeout: 60
+  web:
+    name: 'web'
+    port: 80
+    health_endpoint: '/'
+    startup_timeout: 30
+  db:
+    name: 'db'
+    port: 5432
+    health_check: 'pg_isready'
+    startup_timeout: 30
+  redis:
+    name: 'redis-cache'
+    port: 6379
+    health_check: 'redis-cli ping'
+    startup_timeout: 15
+  rabbitmq:
+    name: 'rabbitmq'
+    port: 5672
+    health_check: 'rabbitmq-diagnostics ping'
+    startup_timeout: 30
+
+# Health Check Configuration
+health_check:
+  max_retries: 10
+  retry_delay: 10
+  timeout: 30
+  endpoints:
+    - path: '/health'
+      expected_status: 200
+    - path: '/api'
+      expected_status: 200
+
+# Security Configuration
+security:
+  file_permissions:
+    env_file: '0600'
+    compose_file: '0644'
+    log_files: '0644'
+    backup_files: '0600'
+  sudo_requirements:
+    docker_installation: true
+    service_management: true
+    user_management: true
+
+# Logging Configuration
+logging:
+  level: 'INFO'
+  max_size: '10m'
+  max_files: 2
+
+# Backup Configuration
+backup:
+  directory: 'backups'
+  format: 'backup-%Y%m%d-%H%M%S'
+  compress: true
+
+# Cleanup Configuration
+cleanup:
+  remove_unused_images: true
+  remove_unused_volumes: false
+  image_retention_hours: 24

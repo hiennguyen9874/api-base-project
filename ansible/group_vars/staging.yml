@@ -1,0 +1,56 @@
+---
+# Staging Environment Configuration
+
+# Environment Settings
+app_environment: 'staging'
+debug_mode: true
+log_level: 'DEBUG'
+
+# Performance Settings
+api_worker_count: 2
+api_worker_timeout: 60
+api_max_requests: 100
+api_max_requests_jitter: 10
+
+# Security Settings
+enable_cors: true
+secure_cookies: false
+ssl_redirect: false
+
+# Monitoring Settings
+enable_monitoring: true
+health_check_interval: 60
+metrics_enabled: true
+
+# Backup Settings
+backup_enabled: false
+backup_schedule: '0 4 * * 0' # Weekly on Sunday at 4 AM
+backup_retention_days: 7
+
+# Resource Limits
+resource_limits:
+  api:
+    memory: '1g'
+    cpu: '0.5'
+  web:
+    memory: '256m'
+    cpu: '0.25'
+  db:
+    memory: '2g'
+    cpu: '1.0'
+  redis:
+    memory: '512m'
+    cpu: '0.25'
+
+# Deployment Settings
+deployment_strategy: 'recreate'
+deployment_batch_size: 1
+deployment_max_unavailable: 1
+deployment_timeout: 300
+
+# Alert Settings
+alerts:
+  enabled: false
+  webhook_url: ''
+  critical_threshold: 95
+  warning_threshold: 85

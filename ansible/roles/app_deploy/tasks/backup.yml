@@ -1,0 +1,75 @@
+---
+# Backup Tasks for Zero-Downtime Deployment
+
+- name: Generate backup directory name
+  ansible.builtin.set_fact:
+    backup_dir: >-
+      backup-{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: '{{ deployment_dir }}/{{ backup_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Display backup information
+  ansible.builtin.debug:
+    msg: '💾 Creating backup in {{ backup_dir }}'
+
+- name: Backup current Docker Compose configuration
+  ansible.builtin.shell: |
+    cd {{ deployment_dir }}
+    docker-compose config > {{ backup_dir }}/docker-compose.backup.yml
+  changed_when: false
+  failed_when: false
+
+- name: Backup current environment file
+  ansible.builtin.copy:
+    src: '{{ deployment_dir }}/.env'
+    dest: '{{ deployment_dir }}/{{ backup_dir }}/.env.backup'
+    remote_src: true
+    mode: '{{ security.file_permissions.backup_files }}'
+  failed_when: false
+
+- name: Export current container images and status
+  ansible.builtin.shell: |
+    cd {{ deployment_dir }}
+    docker-compose images --format table > {{ backup_dir }}/current-images.txt
+    docker-compose ps --format table > {{ backup_dir }}/service-status.txt
+  changed_when: false
+  failed_when: false
+
+- name: Store current version information
+  ansible.builtin.shell: |
+    cd {{ deployment_dir }}
+    grep 'APP__VERSION' .env > {{ backup_dir }}/previous-version.txt || echo 'APP__VERSION=unknown' > {{ backup_dir }}/previous-version.txt
+  changed_when: false
+  failed_when: false
+
+- name: Create backup metadata
+  ansible.builtin.copy:
+    content: |
+      Backup created: {{ ansible_date_time.iso8601 }}
+      Deployment ID: {{ deployment_id }}
+      Environment: {{ app_environment }}
+      Previous version: {{ app_version }}
+      Backup created by: ansible
+    dest: '{{ deployment_dir }}/{{ backup_dir }}/backup-metadata.txt'
+    mode: '0644'
+
+- name: Set backup created flag
+  ansible.builtin.set_fact:
+    backup_created: true
+
+- name: Display backup completion
+  ansible.builtin.debug:
+    msg: '✅ Backup created successfully in {{ backup_dir }}'
+
+- name: Clean up old backups
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    ls -dt backup-* 2>/dev/null | tail -n +{{ max_backup_count + 1 }} | xargs rm -rf
+  changed_when: false
+  failed_when: false
+  when: max_backup_count is defined

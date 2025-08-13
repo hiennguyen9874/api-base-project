@@ -1,0 +1,56 @@
+---
+# Production Environment Configuration
+
+# Environment Settings
+app_environment: 'production'
+debug_mode: false
+log_level: 'WARNING'
+
+# Performance Settings
+api_worker_count: 4
+api_worker_timeout: 120
+api_max_requests: 1000
+api_max_requests_jitter: 50
+
+# Security Settings
+enable_cors: true
+secure_cookies: true
+ssl_redirect: true
+
+# Monitoring Settings
+enable_monitoring: true
+health_check_interval: 30
+metrics_enabled: true
+
+# Backup Settings
+backup_enabled: true
+backup_schedule: '0 2 * * *' # Daily at 2 AM
+backup_retention_days: 30
+
+# Resource Limits
+resource_limits:
+  api:
+    memory: '2g'
+    cpu: '1.0'
+  web:
+    memory: '512m'
+    cpu: '0.5'
+  db:
+    memory: '4g'
+    cpu: '2.0'
+  redis:
+    memory: '1g'
+    cpu: '0.5'
+
+# Deployment Settings
+deployment_strategy: 'rolling'
+deployment_batch_size: 1
+deployment_max_unavailable: 0
+deployment_timeout: 600
+
+# Alert Settings
+alerts:
+  enabled: true
+  webhook_url: "{{ lookup('env', 'SLACK_WEBHOOK_URL') | default('') }}"
+  critical_threshold: 90
+  warning_threshold: 75

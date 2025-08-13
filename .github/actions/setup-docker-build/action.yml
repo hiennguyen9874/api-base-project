@@ -1,0 +1,35 @@
+name: 'Setup Docker Build'
+description: 'Sets up Docker Buildx and logs into container registry'
+
+inputs:
+  registry:
+    description: 'Container registry URL'
+    required: false
+    default: 'ghcr.io'
+  username:
+    description: 'Registry username'
+    required: true
+  password:
+    description: 'Registry password'
+    required: true
+
+outputs:
+  buildx-version:
+    description: 'Docker Buildx version'
+    value: ${{ steps.buildx.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        install: true
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}

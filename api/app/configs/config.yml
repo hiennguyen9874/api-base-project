@@ -1,0 +1,75 @@
+APP:
+  NAME: fastapi-base-project
+  VERSION: 1.6.16
+  TIMEZONE: Asia/Ho_Chi_Minh
+  SECRET_KEY: c9b318a0245798327c688b244b0ae12882b148df4d8ab6e9c91007a1f24ee723
+  BASIC_AUTH: admin:$$2y$$05$$kSD2hpolZf0isSgIS6Pte.X3MSlf.kgnfPf4De1IA2VgUahLKue6u
+  CORS_ORIGINS: 'http://localhost,http://localhost:3000,https://fastapi-base-project-test.dscilab.com:20007'
+  TRUSTED_HOST: '*'
+  ENABLE_DOCS: true
+  PROTECT_MEDIA: true
+  API_PREFIX: /api
+  BASE_DIR: /app
+  CONFIG_DIR: /app/app/configs
+  STATIC_DIR: /app/app/static
+  MEDIA_ROOT: /app/media
+  MEDIA_URL: /media
+
+API:
+  CREATE_CACHE_OBJECT_IMAGE: true
+
+RATELIMIT:
+  REDIS_HOST: redis-cache
+  REDIS_PORT: 6379
+  REDIS_DB: 3
+  LOGIN_RATELIMIT1: '100/5minute'
+  LOGIN_RATELIMIT2: '1000/hour'
+
+TASKIQ:
+  BROKER_URL: amqp://admin:mypass@rabbitmq:5672
+  RESULT_BACKEND: redis://redis-cache:6379/0
+
+TOKEN:
+  ACCESS_TOKEN_SECRET_KEY: 8bfc0a90f0daa48bc30c9cc0a146e8e19047f27c485fe481d83e92e60165216a
+  REFRESH_TOKEN_SECRET_KEY: c8b2aaa3291ea11563c95399bf9bebd77f3e4979dcf1d8120bea8ad4a0691fe8
+  COOKIE_HTTPONLY: true
+  COOKIE_SECURE: true
+  COOKIE_SAMESITE: 'none'
+
+POSTGRES:
+  USER: postgres_user
+  PASSWORD: postgres_password
+  DB: app
+  HOST: pgbouncer
+  PORT: 5432
+
+REDIS_CACHE:
+  HOST: redis-cache
+  PORT: 6379
+  DB: 1
+  API_MAX_CONNECTIONS: 20
+  WORKER_MAX_CONNECTIONS: 10
+  USER_TTL: 3600
+  CASBIN_TTL: 3600
+
+SENTRY:
+  DSN: http://d79bad5cc2a633a680679ba592bf17d6@10.1.1.41:9000/2
+  ENVIRONMENT: development
+
+USER:
+  OPEN_REGISTRATION: false
+  FIRST_USER_EMAIL: admin@gmail.com
+  FIRST_USER_NAME: admin
+  FIRST_USER_PASSWORD: admin_password
+
+REDIS_LOCK:
+  HOST: redis-cache
+  PORT: 6379
+  DB: 2
+
+CASBIN:
+  PATH_MODEL: /app/app/configs/author/casbin_model.conf
+  PATH_POLICY: /app/app/configs/author/rbac_policy.csv
+  DEFAULT_ROLE: role:data_admin
+
+TASKS: {}

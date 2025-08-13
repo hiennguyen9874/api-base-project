@@ -1,0 +1,175 @@
+exclude: '(alembic|crawler/tcbs/.*|crawler/tcbs/init_data/.*)'
+
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args:
+          - --maxkb=2048
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - --unsafe
+
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args:
+          [
+            '--in-place',
+            '--remove-all-unused-imports',
+            '--remove-unused-variable',
+            '--ignore-init-module-imports',
+            '--recursive',
+            '--exclude=*/proto/*.py',
+          ]
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        args:
+          - --settings-path=./.isort.cfg
+          - --filter-files
+        name: isort (python)
+      - id: isort
+        args:
+          - --settings-path=./.isort.cfg
+          - --filter-files
+        name: isort (cython)
+        types: [cython]
+      - id: isort
+        args:
+          - --settings-path=./.isort.cfg
+          - --filter-files
+        name: isort (pyi)
+        types: [pyi]
+
+  # - repo: https://github.com/ambv/black
+  #   rev: 22.3.0
+  #   hooks:
+  #     - id: black
+  #       args:
+  #         - --line-length=100
+  #         - --target-version=py310
+
+  # - repo: https://github.com/PyCQA/flake8
+  #   rev: 4.0.1
+  #   hooks:
+  #     - id: flake8
+  #       additional_dependencies:
+  #         - flake8-bugbear
+  #         - flake8-bandit
+  #         - flake8-blind-except
+  #         - flake8-docstrings
+  #         - flake8-logging-format
+  #         - flake8-print
+  #         - flake8-isort
+
+  # - repo: https://github.com/asottile/pyupgrade
+  #   rev: v2.25.0
+  #   hooks:
+  #     - id: pyupgrade
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.8
+    hooks:
+      - id: ruff-format
+        # types_or: [ python, pyi, jupyter ]
+      - id: ruff
+        # types_or: [ python, pyi, jupyter ]
+        args:
+          - --fix
+          - --select=T20 # Enable the print statement check (T20)
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        args:
+          - --config-file=mypy.ini
+          - --explicit-package-bases
+        additional_dependencies:
+          - types-geoip2
+          - types-pytz
+          - types-redis
+          - types-PyYAML
+          - types-aiofiles
+          - types-python-dateutil
+          - loguru-mypy
+          - types-passlib
+          - aiofiles>=24.1.0
+          - aioredis>=2.0.1
+          - alembic>=1.14.0
+          - asyncpg>=0.30.0
+          - authlib>=1.4.0
+          - bcrypt==4.0.1
+          - casbin>=1.37.0
+          - click>=8.1.8
+          - cython>=3.0.11
+          - email-validator>=2.2.0
+          - fastapi-mail>=1.4.2
+          - fastapi-pagination[sqlalchemy]>=0.12.34
+          - fastapi[standard]==0.112.2
+          - gunicorn>=23.0.0
+          - httpx>=0.28.1
+          - importlib-metadata>=8.5.0
+          - importlib-resources>=6.5.2
+          - itsdangerous>=2.2.0
+          - limits>=4.0.0
+          - loguru>=0.7.3
+          - lz4>=4.3.3
+          - more-itertools>=10.5.0
+          - orjson>=3.10.13
+          - passlib>=1.7.4
+          - psycopg2-binary>=2.9.10
+          - pydantic>=2.10.4
+          - pydantic-extra-types>=2.10.1
+          - pyjwt>=2.10.1
+          - python-multipart>=0.0.20
+          - python-snappy>=0.7.3
+          - pytz>=2024.2
+          - redis[hiredis]>=5.2.1
+          - requests>=2.32.3
+          - sentry-sdk[fastapi]>=2.19.2
+          - setuptools-cythonize>=1.0.7
+          - shortuuid>=1.0.13
+          - slowapi>=0.1.9
+          - sqlalchemy>=2.0.36
+          - tenacity>=9.0.0
+          - ujson>=5.10.0
+          - uvicorn[standard]>=0.34.0
+          - watchdog>=6.0.0
+          - grpcio>=1.69.0
+          - grpcio-tools>=1.69.0
+          - types-requests
+          - taskiq[orjson]>=0.11.17
+          - taskiq-aio-pika>=0.4.2
+          - taskiq-redis>=1.0.9
+          - taskiq-fastapi>=0.3.5
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v20.1.3
+    hooks:
+      - id: clang-format
+        'types_or': [c++, c, cuda]
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: '1.8.3'
+    hooks:
+      - id: bandit
+        args: ['-c', 'bandit.yaml', '-r', '.']
+
+  # - repo: https://github.com/hadolint/hadolint
+  #   rev: v2.12.0
+  #   hooks:
+  #     - id: hadolint

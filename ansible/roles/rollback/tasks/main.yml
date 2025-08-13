@@ -1,0 +1,158 @@
+---
+# Rollback Tasks for Failed Deployments
+
+- name: Display rollback information
+  ansible.builtin.debug:
+    msg: "🔄 Starting automatic rollback for deployment {{ deployment_id | default('unknown') }}"
+
+- name: Log rollback initiation
+  ansible.builtin.lineinfile:
+    path: '{{ deployment_dir }}/deployment.log'
+    line: '{{ ansible_date_time.iso8601 }}: Starting rollback due to deployment failure'
+    mode: '0644'
+
+- name: Find the most recent backup
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    ls -dt backup-* 2>/dev/null | head -n 1
+  register: latest_backup_check
+  changed_when: false
+  failed_when: false
+
+- name: Check if backup exists
+  ansible.builtin.set_fact:
+    backup_available: "{{ latest_backup_check.stdout != '' }}"
+    latest_backup: '{{ latest_backup_check.stdout }}'
+
+- name: Display backup status
+  ansible.builtin.debug:
+    msg: '📦 Found backup: {{ latest_backup }}'
+  when: backup_available
+
+- name: Display no backup warning
+  ansible.builtin.debug:
+    msg: '❌ No backup found - manual intervention required'
+  when: not backup_available
+
+- name: Perform rollback when backup available
+  when: backup_available
+  block:
+    - name: Stop current failed deployment
+      ansible.builtin.shell: |
+        cd {{ deployment_dir }}
+        echo "⏹️ Stopping failed deployment..."
+        docker-compose down --timeout 30 || true
+      changed_when: false
+      failed_when: false
+
+    - name: Restore Docker Compose configuration
+      ansible.builtin.copy:
+        src: '{{ deployment_dir }}/{{ latest_backup }}/docker-compose.backup.yml'
+        dest: '{{ deployment_dir }}/docker-compose.prod.yml'
+        remote_src: true
+        mode: '{{ security.file_permissions.compose_file }}'
+      when: latest_backup != ''
+
+    - name: Restore environment configuration
+      ansible.builtin.copy:
+        src: '{{ deployment_dir }}/{{ latest_backup }}/.env.backup'
+        dest: '{{ deployment_dir }}/.env'
+        remote_src: true
+        mode: '{{ security.file_permissions.env_file }}'
+      when: latest_backup != ''
+
+    - name: Display restore status
+      ansible.builtin.debug:
+        msg: '✅ Configuration files restored from backup'
+
+    - name: Start rollback deployment
+      ansible.builtin.shell: |
+        cd {{ deployment_dir }}
+        echo "🚀 Starting rollback deployment..."
+        docker-compose -f docker-compose.prod.yml up -d
+      register: rollback_deploy_result
+      changed_when: true
+
+    - name: Wait for rollback deployment
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Check rollback deployment status
+      ansible.builtin.shell: |
+        set -o pipefail
+        cd {{ deployment_dir }}
+        docker-compose ps --format table | grep -q "Up"
+      register: rollback_status_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display rollback success
+      when: rollback_status_check.rc == 0
+      block:
+        - name: Log successful rollback
+          ansible.builtin.lineinfile:
+            path: '{{ deployment_dir }}/deployment.log'
+            line: '{{ ansible_date_time.iso8601 }}: Rollback completed successfully'
+            mode: '0644'
+
+        - name: Display success message
+          ansible.builtin.debug:
+            msg: '✅ Rollback completed successfully'
+
+        - name: Set rollback success flag
+          ansible.builtin.set_fact:
+            rollback_success: true
+
+    - name: Display rollback failure
+      when: rollback_status_check.rc != 0
+      block:
+        - name: Log rollback failure
+          ansible.builtin.lineinfile:
+            path: '{{ deployment_dir }}/deployment.log'
+            line: '{{ ansible_date_time.iso8601 }}: Rollback failed - manual intervention required'
+            mode: '0644'
+
+        - name: Display failure message
+          ansible.builtin.debug:
+            msg: '❌ Rollback failed - manual intervention required'
+
+        - name: Set rollback failure flag
+          ansible.builtin.set_fact:
+            rollback_success: false
+
+- name: Handle no backup scenario
+  when: not backup_available
+  block:
+    - name: Log no backup available
+      ansible.builtin.lineinfile:
+        path: '{{ deployment_dir }}/deployment.log'
+        line: '{{ ansible_date_time.iso8601 }}: No backup available for rollback'
+        mode: '0644'
+
+    - name: Set rollback unavailable flag
+      ansible.builtin.set_fact:
+        rollback_success: false
+        rollback_unavailable: true
+
+    - name: Display manual intervention message
+      ansible.builtin.debug:
+        msg: '❌ No backup found - manual intervention required'
+
+- name: Create rollback summary
+  ansible.builtin.set_fact:
+    rollback_summary:
+      backup_available: '{{ backup_available }}'
+      rollback_attempted: '{{ backup_available }}'
+      rollback_success: '{{ rollback_success | default(false) }}'
+      latest_backup: "{{ latest_backup | default('none') }}"
+      deployment_id: "{{ deployment_id | default('unknown') }}"
+
+- name: Display rollback summary
+  ansible.builtin.debug:
+    msg:
+      - '📋 Rollback Summary:'
+      - 'Backup available: {{ rollback_summary.backup_available }}'
+      - 'Rollback attempted: {{ rollback_summary.rollback_attempted }}'
+      - 'Rollback success: {{ rollback_summary.rollback_success }}'
+      - 'Used backup: {{ rollback_summary.latest_backup }}'

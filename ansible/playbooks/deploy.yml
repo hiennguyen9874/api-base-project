@@ -1,0 +1,124 @@
+---
+# Main Deployment Playbook for FastAPI Base Project System
+
+- name: Deploy FastAPI Base Project Application
+  hosts: "{{ target_environment | default('production') }}"
+  gather_facts: true
+  become: false # Individual roles will handle become as needed
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    # Dynamic variables from environment or defaults
+    deploy_host: "{{ lookup('env', 'DEPLOY_HOST') }}"
+    deploy_user: "{{ lookup('env', 'DEPLOY_USER') }}"
+    deploy_ssh_port: "{{ lookup('env', 'DEPLOY_SSH_PORT') | default(22) }}"
+    deploy_ssh_key_file: "{{ lookup('env', 'DEPLOY_SSH_KEY_FILE') | default('~/.ssh/deploy_key') }}"
+    github_actor: "{{ lookup('env', 'GITHUB_ACTOR') }}"
+    health_check_skip: "{{ lookup('env', 'health_check_skip') | default(false) | bool }}"
+  vars_files:
+    - '{{ playbook_dir }}/../group_vars/all.yml'
+    - '{{ playbook_dir }}/../group_vars/{{ target_environment }}.yml'
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - deploy_host is defined and deploy_host != ""
+          - deploy_user is defined and deploy_user != ""
+          - app_version is defined and app_version != ""
+          - github_repository is defined and github_repository != ""
+        fail_msg: |
+          Required deployment variables are missing:
+          - deploy_host: {{ deploy_host | default('UNDEFINED') }}
+          - deploy_user: {{ deploy_user | default('UNDEFINED') }}
+          - app_version: {{ app_version | default('UNDEFINED') }}
+          - github_repository: {{ github_repository | default('UNDEFINED') }}
+
+    - name: Display deployment information
+      ansible.builtin.debug:
+        msg:
+          - '🚀 Starting FastAPI Base Project Deployment'
+          - 'Environment: {{ app_environment }}'
+          - 'Version: {{ app_version }}'
+          - 'Target: {{ deploy_host }}:{{ deploy_ssh_port }}'
+          - 'User: {{ deploy_user }}'
+          - 'Skip health check: {{ health_check_skip }}'
+
+    - name: Verify server connection
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: Display connection status
+      ansible.builtin.debug:
+        msg: '✅ Server connection verified'
+      when: ping_result is succeeded
+
+  tasks:
+    - name: Main deployment block
+      block:
+        # - name: Include docker role
+        #   ansible.builtin.include_role:
+        #     name: docker
+        #   tags: ['docker', 'setup']
+
+        - name: Include app deploy role
+          ansible.builtin.include_role:
+            name: app_deploy
+          tags: ['deploy', 'application']
+
+        - name: Include health check role
+          ansible.builtin.include_role:
+            name: health_check
+          tags: ['health-check', 'verify']
+          when: not health_check_skip
+
+      rescue:
+        - name: Handle deployment failure
+          ansible.builtin.debug:
+            msg: '❌ Deployment failed, initiating rollback procedures'
+
+        - name: Trigger rollback
+          ansible.builtin.include_role:
+            name: rollback
+          when: backup_created | default(false)
+
+        - name: Final failure notification
+          ansible.builtin.fail:
+            msg: "Deployment failed and rollback {{ 'completed' if (rollback_success | default(false)) else 'failed' }}"
+
+  post_tasks:
+    - name: Cleanup and optimize
+      block:
+        - name: Remove unused Docker images
+          ansible.builtin.command: docker image prune -f --filter 'until={{ cleanup.image_retention_hours }}h'
+          changed_when: false
+          when: cleanup.remove_unused_images
+
+        - name: Display cleanup status
+          ansible.builtin.debug:
+            msg: '🧹 Post-deployment cleanup completed'
+
+    - name: Generate deployment summary
+      ansible.builtin.set_fact:
+        deployment_summary:
+          deployment_id: "{{ deployment_id | default('unknown') }}"
+          environment: '{{ app_environment }}'
+          version: '{{ app_version }}'
+          server: '{{ ansible_host }}'
+          status: "{{ 'SUCCESS' if (deployment_success | default(false)) else 'FAILED' }}"
+          timestamp: '{{ ansible_date_time.iso8601 }}'
+          services:
+            api: '{{ container_registry }}/{{ github_repository }}/api:{{ app_version }}'
+            web: '{{ container_registry }}/{{ github_repository }}/web:{{ app_version }}'
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - '🎉 Deployment Summary'
+          - 'Deployment ID: {{ deployment_summary.deployment_id }}'
+          - 'Environment: {{ deployment_summary.environment }}'
+          - 'Version: {{ deployment_summary.version }}'
+          - 'Server: {{ deployment_summary.server }}'
+          - 'Status: {{ deployment_summary.status }}'
+          - 'Timestamp: {{ deployment_summary.timestamp }}'
+          - 'API Image: {{ deployment_summary.services.api }}'
+          - 'Web Image: {{ deployment_summary.services.web }}'

@@ -1,0 +1,41 @@
+name: Release drafter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  draft_release:
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-22.04
+    outputs:
+      html_url: ${{ steps.release_drafter.outputs.html_url }}
+
+    steps:
+      - name: Draft release
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
+        with:
+          publish: false
+          disable-releaser: false
+          disable-autolabeler: true
+          commitish: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate draft summary
+        if: github.event_name == 'push'
+        run: |
+          echo "## 📝 Release Draft Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Draft URL**: ${{ steps.release_drafter.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Ready for manual release" >> $GITHUB_STEP_SUMMARY

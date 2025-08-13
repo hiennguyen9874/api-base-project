@@ -1,0 +1,457 @@
+x-restart-policy: &restart_policy
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: 'json-file'
+    options:
+      max-size: '10m'
+      max-file: '2'
+
+x-healthcheck: &healthcheck
+  interval: 10s
+  start_period: 5s
+  timeout: 10s
+  retries: 5
+
+x-api-environments: &api_enviroments
+  APP__NAME: ${APP__NAME:-null}
+  APP__VERSION: ${APP__VERSION:-null}
+  APP__TIMEZONE: ${APP__TIMEZONE:-null}
+  POSTGRES__USER: ${POSTGRES__USER:-null}
+  POSTGRES__PASSWORD: ${POSTGRES__PASSWORD:-null}
+  POSTGRES__DB: ${POSTGRES__DB:-null}
+  POSTGRES__HOST: ${POSTGRES__HOST:-null}
+  POSTGRES__PORT: ${POSTGRES__PORT:-null}
+  APP__CORS_ORIGINS: ${APP__CORS_ORIGINS:-null}
+  SENTRY__DSN: ${SENTRY__DSN:-null}
+  SENTRY__ENVIRONMENT: ${SENTRY__ENVIRONMENT:-null}
+
+x-api-image: &api_image
+  image: ghcr.io/hiennguyen9874/fastapi-base-project/api:${APP__VERSION}-dev
+  build:
+    context: api
+    dockerfile: Dockerfile.dev
+
+x-api-defaults: &api_defaults
+  <<: [*api_image]
+  environment:
+    <<: [*api_enviroments]
+  depends_on:
+    pgbouncer:
+      condition: service_healthy
+      restart: true
+    redis-cache:
+      condition: service_healthy
+      restart: true
+    rabbitmq:
+      condition: service_healthy
+      restart: true
+  networks:
+    - traefik
+    - api
+    - api-public
+  volumes:
+    - /etc/timezone:/etc/timezone:ro
+    - /etc/localtime:/etc/localtime:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./api/app:/app/app
+
+x-worker-defaults: &worker_defaults
+  <<: [*api_image]
+  networks:
+    - api
+    - api-public
+  environment:
+    <<: [*api_enviroments]
+  depends_on:
+    prestart:
+      condition: service_completed_successfully
+      restart: true
+    pgbouncer:
+      condition: service_healthy
+      restart: true
+    redis-cache:
+      condition: service_healthy
+      restart: true
+    rabbitmq:
+      condition: service_healthy
+      restart: true
+  volumes:
+    - /etc/timezone:/etc/timezone:ro
+    - /etc/localtime:/etc/localtime:ro
+    - ./api/app:/app/app
+
+services:
+  # autoheal:
+  #   <<: [*restart_policy, *logging]
+  #   image: willfarrell/autoheal:1.2.0
+  #   profiles:
+  #     - autoheal
+  #   network_mode: none
+  #   volumes:
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     AUTOHEAL_CONTAINER_LABEL: autoheal-${COMPOSE_PROJECT_NAME}
+  #     AUTOHEAL_INTERVAL: 10
+  #     AUTOHEAL_START_PERIOD: 300
+
+  # proxy:
+  #   <<: [*restart_policy, *logging]
+  #   image: traefik:v3.2
+  #   hostname: ${COMPOSE_PROJECT_NAME}-proxy
+  #   ports:
+  #     - ${APP__PORT}:80
+  #     # - 8080:8080
+  #   expose:
+  #     - 8080
+  #   volumes:
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #   networks:
+  #     - traefik
+  #     - traefik-public
+  #   extra_hosts:
+  #     - host.docker.internal:host-gateway
+  #   environment:
+  #     - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+  #   command:
+  #     # Enable Docker in Traefik, so that it reads labels from Docker services
+  #     - --providers.docker=true
+  #     # Add a constraint to only use services with the label for this stack
+  #     - --providers.docker.constraints=Label(`traefik.constraint-label`, `${COMPOSE_PROJECT_NAME}`)
+  #     # Do not expose all Docker services, only the ones explicitly exposed
+  #     - --providers.docker.exposedbydefault=false
+  #     # Create an entrypoint "http" listening on port 80
+  #     - --entrypoints.${COMPOSE_PROJECT_NAME}_http.address=:80
+  #     # Enable the access log, with HTTP requests
+  #     - --accesslog
+  #     # Enable the Traefik log, for configurations and errors
+  #     - --log
+  #     # Enable debug logging for local development
+  #     # - --log.level=DEBUG
+  #     # Enable the Dashboard and API
+  #     # - --api
+  #     # Traefik will listen on port 8080 by default for API request.
+  #     # - --api.insecure=true
+  #     # Enable the metrics, with prometheus
+  #     - --metrics.prometheus=true
+  #     # Enable ping with Traefik
+  #     - --ping
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.constraint-label=${COMPOSE_PROJECT_NAME}
+  #     # Defines a default docker network to use for connections to all containers.
+  #     - traefik.docker.network=${COMPOSE_PROJECT_NAME}_traefik
+  #     - traefik.http.routers.${COMPOSE_PROJECT_NAME}_proxy.entrypoints=${COMPOSE_PROJECT_NAME}_http
+  #     - traefik.http.services.${COMPOSE_PROJECT_NAME}_proxy.loadbalancer.server.port=80
+  #     - autoheal-${COMPOSE_PROJECT_NAME}=true
+  #   healthcheck:
+  #     <<: *healthcheck
+  #     test: ['CMD', 'traefik', 'healthcheck', '--ping']
+
+  db:
+    <<: [*restart_policy, *logging]
+    image: postgres:15-alpine
+    hostname: ${COMPOSE_PROJECT_NAME}-db
+    command: >
+      postgres
+      -c shared_preload_libraries='pg_stat_statements'
+      -c pg_stat_statements.track=all
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - app-db-data:/var/lib/postgresql/data/
+      - ./postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    networks:
+      - api
+      - db
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=${POSTGRES__USER}
+      - POSTGRES_PASSWORD=${POSTGRES__PASSWORD}
+      - POSTGRES_DB=${POSTGRES__DB}
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 --auth-local=scram-sha-256
+    expose:
+      - 5432
+    labels:
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    healthcheck:
+      <<: *healthcheck
+      test:
+        [
+          'CMD-SHELL',
+          "sh -c 'pg_isready -U $$POSTGRES_USER -d app && pg_isready -U $$POSTGRES_USER -d metabaseappdb'",
+        ]
+
+  pgbouncer:
+    <<: [*restart_policy, *logging]
+    image: edoburu/pgbouncer:v1.23.1-p2
+    networks:
+      - api
+      - db
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+    environment:
+      - DB_HOST=db
+      - DB_USER=${POSTGRES__USER}
+      - DB_PASSWORD=${POSTGRES__PASSWORD}
+      - DB_NAME=${POSTGRES__DB}
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=1000
+      - AUTH_TYPE=scram-sha-256
+      - AUTH_USER=${POSTGRES__USER}
+      - ADMIN_USERS=postgres,${POSTGRES__USER}
+    expose:
+      - 5432
+    # ports:
+    #   - 5432:5432
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD', 'pg_isready', '-h', 'localhost']
+
+  pgadmin:
+    <<: [*restart_policy, *logging]
+    profiles:
+      - pgadmin
+    image: dpage/pgadmin4:7
+    hostname: ${COMPOSE_PROJECT_NAME}-pgadmin
+    user: root
+    entrypoint: >
+      /bin/sh -c "
+      chmod 600 /pgpass;
+      /entrypoint.sh;
+      "
+    networks:
+      - traefik
+      - api
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    expose:
+      - 5050
+    ports:
+      - 5050:5050
+    environment:
+      - PGADMIN_LISTEN_PORT=5050
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN__EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN__PASSWORD}
+      - SCRIPT_NAME=/pgadmin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - app-pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/pgpass:/pgpass
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label=${COMPOSE_PROJECT_NAME}
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_traefik
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_pgadmin.rule=PathPrefix(`/pgadmin`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_pgadmin.entrypoints=${COMPOSE_PROJECT_NAME}_http
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}_pgadmin.loadbalancer.server.port=5050
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}_pgadmin.middlewares=${COMPOSE_PROJECT_NAME}_pgadmin-basicauth
+      # - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_pgadmin-basicauth.basicauth.users=${APP__BASIC_AUTH}
+
+  rabbitmq:
+    <<: [*restart_policy, *logging]
+    image: rabbitmq:3.9.8-management-alpine
+    hostname: ${COMPOSE_PROJECT_NAME}-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ__USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ__PASS}
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management path_prefix "/rabbitmq"
+    networks:
+      - traefik
+      - api
+    expose:
+      - 5672
+      - 15672
+      - 15692
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - app-rabbitmq-data:/var/lib/rabbitmq/mnesia
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label=${COMPOSE_PROJECT_NAME}
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_traefik
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_rabbitmq.rule=PathPrefix(`/rabbitmq/`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_rabbitmq.entrypoints=${COMPOSE_PROJECT_NAME}_http
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}_rabbitmq.loadbalancer.server.port=15672
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}_rabbitmq.middlewares=${COMPOSE_PROJECT_NAME}_rabbitmq-basicauth
+      # - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_rabbitmq-basicauth.basicauth.users=${APP__BASIC_AUTH}
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
+
+  redis-cache:
+    <<: [*restart_policy, *logging]
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.18.1
+    hostname: ${COMPOSE_PROJECT_NAME}-redis-cache
+    ulimits:
+      memlock: -1
+    networks:
+      - api
+    expose:
+      - 6379
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command:
+      - '--maxmemory=5G'
+      - '--cache_mode=true'
+      - '--dbfilename='
+    labels:
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD-SHELL', '/usr/local/bin/healthcheck.sh']
+
+  redisinsight:
+    <<: [*restart_policy, *logging]
+    profiles:
+      - redisinsight
+    image: redis/redisinsight:2.48
+    hostname: ${COMPOSE_PROJECT_NAME}_redisinsight
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - app-redisinsight-data:/data
+    expose:
+      - 5540
+    ports:
+      - 5540:5540
+    environment:
+      RI_APP_PORT: 5540
+      RI_STDOUT_LOGGER: 'true'
+      RI_LOG_LEVEL: 'info'
+      RI_PROXY_PATH: '/redisinsight'
+    networks:
+      - api
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label=${COMPOSE_PROJECT_NAME}
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_traefik
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_redisinsight.rule=PathPrefix(`/redisinsight`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_redisinsight.entrypoints=${COMPOSE_PROJECT_NAME}_http
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}_redisinsight.loadbalancer.server.port=5540
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_redisinsight.middlewares=${COMPOSE_PROJECT_NAME}_redisinsight-basicauth
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_redisinsight-basicauth.basicauth.users=${APP__BASIC_AUTH}
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD', 'wget', '-O', '-', 'http://localhost:5540/redisinsight/api/health/']
+
+  prestart:
+    <<: [*logging, *api_defaults]
+    hostname: ${COMPOSE_PROJECT_NAME}-prestart
+    container_name: ${COMPOSE_PROJECT_NAME}_prestart
+    command: bash /prestart.sh
+    labels:
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    restart: 'no'
+
+  api:
+    <<: [*restart_policy, *logging, *api_defaults]
+    hostname: ${COMPOSE_PROJECT_NAME}-api
+    container_name: ${COMPOSE_PROJECT_NAME}_api
+    command:
+      - fastapi
+      - run
+      - --port=80
+      - --reload
+      - 'app/main.py'
+      - --proxy-headers
+      - --workers=${API__CONCURRENCY}
+    expose:
+      - 80
+    ports:
+      - ${APP__API_PORT}:80
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label=${COMPOSE_PROJECT_NAME}
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_traefik
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_api.rule=PathPrefix(`/api`) || PathPrefix(`/static`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}_api.entrypoints=${COMPOSE_PROJECT_NAME}_http
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}_api.loadbalancer.server.port=80
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}_api.middlewares=${COMPOSE_PROJECT_NAME}_api-ratelimit
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_api-ratelimit.ratelimit.average=100
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_api-ratelimit.ratelimit.burst=200
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}_api-ratelimit.ratelimit.period=1m
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+        restart: true
+      pgbouncer:
+        condition: service_healthy
+        restart: true
+      redis-cache:
+        condition: service_healthy
+        restart: true
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+    networks:
+      - traefik
+      - api
+      - api-public
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD', 'curl', '-f', 'http://localhost:80/health']
+      start_period: 20s
+
+  worker:
+    <<: [*restart_policy, *logging, *worker_defaults]
+    hostname: ${COMPOSE_PROJECT_NAME}-worker
+    container_name: ${COMPOSE_PROJECT_NAME}_worker
+    command:
+      - taskiq
+      - worker
+      - app.worker:broker
+      - app.src.tasks
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    labels:
+      - autoheal-${COMPOSE_PROJECT_NAME}=true
+
+  worker-beat:
+    <<: [*restart_policy, *logging, *worker_defaults]
+    hostname: ${COMPOSE_PROJECT_NAME}-worker-beat
+    container_name: ${COMPOSE_PROJECT_NAME}_worker_beat
+    command:
+      - taskiq
+      - scheduler
+      - app.worker:scheduler
+      - app.src.tasks
+
+networks:
+  traefik-public:
+  api-public:
+  traefik:
+  api:
+  db:
+
+volumes:
+  app-db-data:
+  app-pgadmin-data:
+  app-redisinsight-data:
+  app-rabbitmq-data:

@@ -1,0 +1,275 @@
+name: Deploy to Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+      health_check_skip:
+        description: 'Skip health check (use with caution)'
+        required: false
+        default: false
+        type: boolean
+      force_deployment:
+        description: 'Force deployment even if same version'
+        required: false
+        default: false
+        type: boolean
+
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      health_check_skip:
+        required: false
+        default: false
+        type: boolean
+      force_deployment:
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DEPLOYMENT_TIMEOUT: 600
+  HEALTH_CHECK_TIMEOUT: 600
+  MAX_ROLLBACK_ATTEMPTS: 3
+
+jobs:
+  # Pre-deployment validation
+  validate-deployment:
+    runs-on: ubuntu-22.04
+    environment: ${{ inputs.environment }}
+    outputs:
+      deployment-id: ${{ steps.deploy-id.outputs.deployment_id }}
+
+    steps:
+      - name: Generate deployment ID
+        id: deploy-id
+        run: |
+          DEPLOY_ID="deploy-$(date +%Y%m%d-%H%M%S)-${{ github.run_number }}"
+          echo "deployment_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          echo "🚀 Deployment ID: $DEPLOY_ID"
+
+      - name: Validate inputs
+        run: |
+          echo "## 🔍 Deployment Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment ID**: ${{ steps.deploy-id.outputs.deployment_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skip Health Check**: ${{ inputs.health_check_skip }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Force Deployment**: ${{ inputs.force_deployment }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+\.[0-9]+)?$ ]]; then
+            echo "❌ Invalid version format: ${{ inputs.version }}"
+            echo "Expected format: v1.0.0 or v1.0.0-beta.1"
+            exit 1
+          fi
+          echo "✅ Version format is valid"
+
+  # Main deployment job with Ansible
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: validate-deployment
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python for Ansible
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible docker
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H -p ${{ vars.DEPLOY_SSH_PORT || 22 }} ${{ vars.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create Ansible inventory
+        run: |
+          cd ansible
+          cat > inventory/runtime.yml << EOF
+          ---
+          all:
+            children:
+              ${{ inputs.environment }}:
+                hosts:
+                  host-${{ inputs.environment }}:
+                    # Runtime connection overrides
+                    ansible_host: "${{ vars.DEPLOY_HOST }}"
+                    ansible_port: "${{ vars.DEPLOY_SSH_PORT || 22 }}"
+                    ansible_user: "${{ vars.DEPLOY_USER }}"
+                    ansible_ssh_private_key_file: "~/.ssh/deploy_key"
+                    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+                vars:
+                  # Runtime variable overrides
+                  deploy_host: "${{ vars.DEPLOY_HOST }}"
+                  deploy_user: "${{ vars.DEPLOY_USER }}"
+                  deploy_ssh_port: "${{ vars.DEPLOY_SSH_PORT || 22 }}"
+                  deploy_ssh_key_file: "~/.ssh/deploy_key"
+          EOF
+
+      - name: Verify Ansible connection and sudo access
+        run: |
+          cd ansible
+          echo "Testing basic connectivity..."
+          ansible all -i inventory/${{ inputs.environment }}.yml -i inventory/runtime.yml -m ping
+
+          # echo "Testing sudo access (should show passwordless sudo)..."
+          # ansible all -i inventory/${{ inputs.environment }}.yml -i inventory/runtime.yml -m shell -a "sudo -l | head -5" || echo "Warning: Sudo access test failed - deployment may require passwordless sudo setup"
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT || 22 }}
+
+      - name: Run Ansible deployment
+        run: |
+          cd ansible
+          ansible-playbook \
+            -i inventory/${{ inputs.environment }}.yml \
+            -i inventory/runtime.yml \
+            -e "target_environment=${{ inputs.environment }}" \
+            -e "deployment_id=${{ needs.validate-deployment.outputs.deployment-id }}" \
+            -e "health_check_skip=${{ inputs.health_check_skip }}" \
+            -e "environment=${{ inputs.environment }}" \
+            playbooks/deploy.yml
+        env:
+          # Connection variables
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT || 22 }}
+          DEPLOY_SSH_KEY_FILE: ~/.ssh/deploy_key
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+          health_check_skip: ${{ inputs.health_check_skip }}
+
+          # Application Configuration
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME || 'fastapi-base-project' }}
+          APP__NAME: ${{ vars.APP__NAME || 'FastAPI Base Project' }}
+          APP__VERSION: ${{ inputs.version }}
+          APP__TIMEZONE: ${{ vars.APP__TIMEZONE || 'Asia/Ho_Chi_Minh' }}
+          APP__PORT: ${{ vars.APP__PORT || '8000' }}
+          APP__CORS_ORIGINS: ${{ vars.APP__CORS_ORIGINS }}
+          APP__BASIC_AUTH: ${{ secrets.APP__BASIC_AUTH }}
+
+          # Database Configuration
+          POSTGRES__USER: ${{ vars.POSTGRES__USER }}
+          POSTGRES__PASSWORD: ${{ secrets.POSTGRES__PASSWORD }}
+          POSTGRES__DB: ${{ vars.POSTGRES__DB }}
+          POSTGRES__HOST: ${{ vars.POSTGRES__HOST || 'db' }}
+          POSTGRES__PORT: ${{ vars.POSTGRES__PORT || '5432' }}
+
+          # RabbitMQ Configuration
+          RABBITMQ__USER: ${{ vars.RABBITMQ__USER }}
+          RABBITMQ__PASS: ${{ secrets.RABBITMQ__PASS }}
+
+          # Monitoring Configuration
+          SENTRY__DSN: ${{ vars.SENTRY__DSN }}
+          SENTRY__ENVIRONMENT: ${{ inputs.environment }}
+
+          # PgAdmin Configuration
+          PGADMIN__EMAIL: ${{ vars.PGADMIN__EMAIL }}
+          PGADMIN__PASSWORD: ${{ secrets.PGADMIN__PASSWORD }}
+
+          # API Configuration
+          API__CONCURRENCY: ${{ vars.API__CONCURRENCY || '4' }}
+
+          # GitHub Token for container registry
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display deployment status
+        run: |
+          echo "🚀 Ansible deployment completed"
+
+      - name: Verify deployment success
+        run: |
+          echo "✅ Deployment verification completed via Ansible"
+
+      # All deployment steps are now handled by Ansible
+      # The previous SSH-based steps have been replaced with the single Ansible playbook execution above
+
+      # Health checks, verification, and cleanup are now handled by Ansible
+      # The health-check role performs comprehensive verification
+      # Post-deployment tasks handle cleanup and optimization
+
+      - name: Generate deployment summary
+        if: success()
+        run: |
+          echo "## 🎉 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment ID**: ${{ needs.validate-deployment.outputs.deployment-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server**: ${{ vars.DEPLOY_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Successfully deployed and verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Services Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **API**: ghcr.io/${{ github.repository }}/api:${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web**: ghcr.io/${{ github.repository }}/web:${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Health Status" >> $GITHUB_STEP_SUMMARY
+          echo "- All services are running and healthy" >> $GITHUB_STEP_SUMMARY
+          echo "- API endpoints are responding" >> $GITHUB_STEP_SUMMARY
+          echo "- Database connections verified" >> $GITHUB_STEP_SUMMARY
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "💥 Deployment failed, initiating Ansible rollback..."
+
+          cd ansible
+          ansible-playbook \
+            -i inventory/${{ inputs.environment }}.yml \
+            -i inventory/runtime.yml \
+            -e "target_environment=${{ inputs.environment }}" \
+            -e "ANSIBLE_FORCE_ROLLBACK=true" \
+            playbooks/rollback.yml || echo "Rollback attempted"
+        env:
+          # Connection variables
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT || 22 }}
+          DEPLOY_SSH_KEY_FILE: ~/.ssh/deploy_key
+
+      - name: Update deployment summary on failure
+        if: failure()
+        run: |
+          echo "## ❌ Deployment Failed - Rollback Initiated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ❌ Failed (Ansible rollback attempted)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action Required**: Check server logs and deployment status" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,106 @@
+---
+# Standalone Health Check Playbook for FastAPI Base Project System
+
+- name: Health Check FastAPI Base Project Application
+  hosts: "{{ target_environment | default('production') }}"
+  gather_facts: true
+  become: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    # Dynamic variables from environment or defaults
+    deploy_host: "{{ lookup('env', 'DEPLOY_HOST') }}"
+    deploy_user: "{{ lookup('env', 'DEPLOY_USER') }}"
+    deploy_ssh_port: "{{ lookup('env', 'DEPLOY_SSH_PORT') | default(22) }}"
+    deploy_ssh_key_file: "{{ lookup('env', 'DEPLOY_SSH_KEY_FILE') | default('~/.ssh/deploy_key') }}"
+  vars_files:
+    - '{{ playbook_dir }}/../group_vars/all.yml'
+    - '{{ playbook_dir }}/../group_vars/{{ target_environment }}.yml'
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - deploy_host is defined and deploy_host != ""
+          - deploy_user is defined and deploy_user != ""
+        fail_msg: 'Required health check variables are missing'
+
+    - name: Display health check information
+      ansible.builtin.debug:
+        msg:
+          - '🏥 Starting FastAPI Base Project Health Check'
+          - 'Environment: {{ app_environment }}'
+          - 'Target: {{ deploy_host }}:{{ deploy_ssh_port }}'
+          - 'User: {{ deploy_user }}'
+
+    - name: Verify server connection
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: Display connection status
+      ansible.builtin.debug:
+        msg: '✅ Server connection verified for health check'
+      when: ping_result is succeeded
+
+  tasks:
+    - name: Execute health check
+      ansible.builtin.include_role:
+        name: health_check
+
+    - name: Get current service status
+      ansible.builtin.shell: |
+        cd {{ deployment_dir }}
+        docker-compose ps --format 'json'
+      register: service_status_json
+      changed_when: false
+      failed_when: false
+
+    - name: Parse service status
+      ansible.builtin.set_fact:
+        services_status: '{{ service_status_json.stdout | from_json if service_status_json.rc == 0 else [] }}'
+
+    - name: Display detailed service information
+      ansible.builtin.debug:
+        msg:
+          - 'Service: {{ item.Service }}'
+          - 'State: {{ item.State }}'
+          - 'Status: {{ item.Status }}'
+          - "Ports: {{ item.Ports | default('N/A') }}"
+        verbosity: 1
+      loop: '{{ services_status }}'
+      when: services_status | length > 0
+
+  post_tasks:
+    - name: Generate health check summary
+      ansible.builtin.set_fact:
+        health_check_summary:
+          environment: '{{ app_environment }}'
+          server: '{{ ansible_host }}'
+          overall_status: "{{ 'HEALTHY' if (deployment_success | default(false)) else 'UNHEALTHY' }}"
+          timestamp: '{{ ansible_date_time.iso8601 }}'
+          services_count: '{{ services_status | length }}'
+          healthy_services: "{{ services_status | selectattr('State', 'equalto', 'running') | list | length }}"
+
+    - name: Display health check summary
+      ansible.builtin.debug:
+        msg:
+          - '🏥 Health Check Summary'
+          - 'Environment: {{ health_check_summary.environment }}'
+          - 'Server: {{ health_check_summary.server }}'
+          - 'Overall Status: {{ health_check_summary.overall_status }}'
+          - 'Timestamp: {{ health_check_summary.timestamp }}'
+          - 'Services: {{ health_check_summary.healthy_services }}/{{ health_check_summary.services_count }} healthy'
+
+    - name: Health check success
+      ansible.builtin.debug:
+        msg: '✅ All health checks passed'
+      when: deployment_success | default(false)
+
+    - name: Health check failure
+      ansible.builtin.debug:
+        msg: '❌ Health checks failed - review service status'
+      when: not (deployment_success | default(false))
+
+    - name: Fail playbook if unhealthy
+      ansible.builtin.fail:
+        msg: 'Health check failed - application is not healthy'
+      when: not (deployment_success | default(false))

@@ -1,0 +1,22 @@
+name: Auto label for pull request
+
+on:
+  pull_request:
+    # Only following types are handled by the action, but one can default to all as well
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  autolabel_pr:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Auto-label pull request
+        uses: release-drafter/release-drafter@v6
+        with:
+          disable-releaser: true
+          disable-autolabeler: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

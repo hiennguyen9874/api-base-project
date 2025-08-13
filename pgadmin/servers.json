@@ -1,0 +1,17 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "pgadmin4@pgadmin.org",
+            "Group": "Servers",
+            "Host": "db",
+            "Port": 5432,
+            "MaintenanceDB": "app",
+            "Username": "postgres_user",
+            "ConnectionParameters": {
+                "sslmode": "prefer",
+                "connect_timeout": 10,
+                "passfile": "/pgpass"
+            }
+        }
+    }
+}

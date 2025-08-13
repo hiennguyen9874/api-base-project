@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: FastAPI Base Project Team
+  description: Health check and monitoring for FastAPI Base Project deployment
+  company: FastAPI Base Project
+  license: MIT
+  min_ansible_version: '2.9'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - healthcheck
+    - monitoring
+    - deployment
+
+dependencies: []

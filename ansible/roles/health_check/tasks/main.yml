@@ -1,0 +1,190 @@
+---
+# Health Check Tasks for Deployment Verification
+
+- name: Display health check information
+  ansible.builtin.debug:
+    msg: '🏥 Starting health checks for {{ app_environment }} environment'
+
+- name: Wait for containers to start
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    timeout {{ deployment_timeout }} bash -c '
+      while ! docker-compose ps --format table | grep -q "Up"; do
+        echo "⏳ Waiting for containers to start..."
+        sleep 5
+      done
+    '
+  register: container_start_result
+  failed_when: container_start_result.rc != 0
+  changed_when: false
+
+- name: Display container startup status
+  ansible.builtin.debug:
+    msg: '✅ Containers started successfully'
+  when: container_start_result.rc == 0
+
+- name: Monitor health checks
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    timeout {{ health_check_timeout }} bash -c '
+      while docker-compose ps --format table | grep -q "(health: starting)"; do
+        echo "⏳ Waiting for health checks to pass..."
+        docker-compose ps --format table
+        sleep 10
+      done
+    '
+  register: health_check_result
+  failed_when: health_check_result.rc != 0
+  changed_when: false
+
+- name: Check for failed containers
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    docker-compose ps --format table | grep -q "Exit"
+  register: failed_containers_check
+  changed_when: false
+  failed_when: false
+
+- name: Display failed containers if any
+  when: failed_containers_check.rc == 0
+  block:
+    - name: Show failed services
+      ansible.builtin.shell: |
+        cd {{ deployment_dir }}
+        echo "❌ Some services failed to start:"
+        docker-compose ps
+        echo "📋 Recent logs:"
+        docker-compose logs --tail=50
+      register: failed_services_output
+      changed_when: false
+
+    - name: Set failure flag
+      ansible.builtin.set_fact:
+        deployment_health_status: 'FAILED'
+
+    - name: Display failure information
+      ansible.builtin.debug:
+        msg:
+          - '❌ Health check failed - some containers failed to start'
+          - '{{ failed_services_output.stdout }}'
+
+- name: Check for unhealthy containers
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ deployment_dir }}
+    docker-compose ps --format table | grep -q "(unhealthy)"
+  register: unhealthy_containers_check
+  changed_when: false
+  failed_when: false
+
+- name: Display unhealthy containers if any
+  when: unhealthy_containers_check.rc == 0 and deployment_health_status is not defined
+  block:
+    - name: Show unhealthy services
+      ansible.builtin.shell: |
+        cd {{ deployment_dir }}
+        echo "❌ Some services are unhealthy:"
+        docker-compose ps
+        echo "📋 Recent logs:"
+        docker-compose logs --tail=50
+      register: unhealthy_services_output
+      changed_when: false
+
+    - name: Set unhealthy flag
+      ansible.builtin.set_fact:
+        deployment_health_status: 'UNHEALTHY'
+
+    - name: Display unhealthy information
+      ansible.builtin.debug:
+        msg:
+          - '❌ Health check failed - some containers are unhealthy'
+          - '{{ unhealthy_services_output.stdout }}'
+
+- name: Set healthy status if no issues found
+  ansible.builtin.set_fact:
+    deployment_health_status: 'HEALTHY'
+  when: failed_containers_check.rc != 0 and unhealthy_containers_check.rc != 0
+
+- name: Wait before API endpoint tests
+  ansible.builtin.pause:
+    seconds: 15
+  when: deployment_health_status == "HEALTHY"
+
+- name: Test API endpoints
+  when: deployment_health_status == "HEALTHY"
+  block:
+    - name: Test API health endpoint
+      ansible.builtin.uri:
+        url: 'http://localhost:{{ app_port }}/health'
+        method: GET
+        timeout: 30
+      register: health_endpoint_result
+
+    - name: Test API base endpoint
+      ansible.builtin.uri:
+        url: 'http://localhost:{{ app_port }}/api'
+        method: GET
+        timeout: 30
+      register: api_base_result
+      failed_when: false
+
+    - name: Display API test results
+      ansible.builtin.debug:
+        msg:
+          - '✅ API health endpoint is responding'
+          - '✅ API base endpoint is responding'
+      when: health_endpoint_result.status == 200
+
+    - name: Display API warning if base endpoint fails
+      ansible.builtin.debug:
+        msg: '⚠️ API base endpoint not responding, but health check passed'
+      when: health_endpoint_result.status == 200 and (api_base_result.failed | default(false))
+
+  rescue:
+    - name: Set API failure status
+      ansible.builtin.set_fact:
+        deployment_health_status: 'API_FAILED'
+
+    - name: Display API failure
+      ansible.builtin.debug:
+        msg: '❌ API health endpoint is not responding'
+
+- name: Show final service status
+  ansible.builtin.shell: |
+    cd {{ deployment_dir }}
+    echo "📊 Final service status:"
+    docker-compose ps
+  register: final_status
+  changed_when: false
+
+- name: Display final status
+  ansible.builtin.debug:
+    msg: '{{ final_status.stdout }}'
+
+- name: Set deployment success
+  ansible.builtin.set_fact:
+    deployment_success: true
+  when: deployment_health_status == "HEALTHY"
+
+- name: Set deployment failure
+  ansible.builtin.set_fact:
+    deployment_success: false
+  when: deployment_health_status != "HEALTHY"
+
+- name: Display health check completion
+  ansible.builtin.debug:
+    msg: '✅ Health checks completed - deployment is healthy'
+  when: deployment_success | default(false)
+
+- name: Display health check failure
+  ansible.builtin.debug:
+    msg: '❌ Health checks failed - deployment status: {{ deployment_health_status }}'
+  when: not (deployment_success | default(false))
+
+- name: Fail deployment if unhealthy
+  ansible.builtin.fail:
+    msg: 'Deployment failed health checks with status: {{ deployment_health_status }}'
+  when: not (deployment_success | default(false))

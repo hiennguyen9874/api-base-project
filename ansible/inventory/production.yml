@@ -1,0 +1,62 @@
+---
+all:
+  children:
+    production:
+      hosts:
+        host-prod:
+          ansible_host: '{{ deploy_host }}'
+          ansible_port: '{{ deploy_ssh_port | default(22) }}'
+          ansible_user: '{{ deploy_user }}'
+          ansible_ssh_private_key_file: '{{ deploy_ssh_key_file }}'
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          # Sudo configuration for production
+          ansible_become: false
+          ansible_become_method: sudo
+          ansible_become_user: root
+          # Production should use passwordless sudo - configure on server with:
+          # echo "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/{{ deploy_user }}
+
+      vars:
+        # Environment Configuration
+        app_environment: production
+        compose_project_name: "{{ lookup('env', 'COMPOSE_PROJECT_NAME') | default('fastapi-base-project') }}"
+        deployment_dir: '~/deployments/fastapi-base-project'
+
+        # Application Configuration
+        app_name: "{{ lookup('env', 'APP__NAME') | default('FastAPI Base Project') }}"
+        app_version: "{{ lookup('env', 'APP__VERSION') }}"
+        app_timezone: "{{ lookup('env', 'APP__TIMEZONE') | default('Asia/Ho_Chi_Minh') }}"
+        app_port: "{{ lookup('env', 'APP__PORT') | default('8000') }}"
+        app_cors_origins: "{{ lookup('env', 'APP__CORS_ORIGINS') }}"
+
+        # Database Configuration
+        postgres_user: "{{ lookup('env', 'POSTGRES__USER') }}"
+        postgres_password: "{{ lookup('env', 'POSTGRES__PASSWORD') }}"
+        postgres_db: "{{ lookup('env', 'POSTGRES__DB') }}"
+        postgres_host: "{{ lookup('env', 'POSTGRES__HOST') | default('db') }}"
+        postgres_port: "{{ lookup('env', 'POSTGRES__PORT') | default('5432') }}"
+
+        # RabbitMQ Configuration
+        rabbitmq_user: "{{ lookup('env', 'RABBITMQ__USER') }}"
+        rabbitmq_pass: "{{ lookup('env', 'RABBITMQ__PASS') }}"
+
+        # Monitoring Configuration
+        sentry_dsn: "{{ lookup('env', 'SENTRY__DSN') | default('') }}"
+        sentry_environment: '{{ app_environment }}'
+
+        # PgAdmin Configuration
+        pgadmin_email: "{{ lookup('env', 'PGADMIN__EMAIL') }}"
+        pgadmin_password: "{{ lookup('env', 'PGADMIN__PASSWORD') }}"
+
+        # API Configuration
+        api_concurrency: "{{ lookup('env', 'API__CONCURRENCY') | default('4') }}"
+
+        # Container Registry
+        container_registry: 'ghcr.io'
+        github_repository: "{{ lookup('env', 'GITHUB_REPOSITORY') }}"
+        github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+
+        # Health Check Configuration
+        health_check_timeout: 600
+        deployment_timeout: 600
+        max_rollback_attempts: 3

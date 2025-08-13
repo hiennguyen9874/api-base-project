@@ -1,0 +1,94 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  checks: write
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+
+jobs:
+  # Detect changes to optimize test execution
+  changes:
+    runs-on: ubuntu-22.04
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'api/**'
+              - 'requirements*.txt'
+              - 'pytest.ini'
+              - 'pyproject.toml'
+            frontend:
+              - 'frontend/**'
+              - 'frontend/package*.json'
+
+  # Frontend tests
+  frontend-tests:
+    runs-on: ubuntu-22.04
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run build test
+        working-directory: frontend
+        run: npm run build
+
+  # Test results summary
+  test-summary:
+    runs-on: ubuntu-22.04
+    needs: [frontend-tests]
+    if: always()
+    steps:
+      - name: Generate test summary
+        run: |
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Frontend tests
+          if [ "${{ needs.frontend-tests.result }}" == "success" ]; then
+            echo "- ✅ Frontend Tests: **PASSED**" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.frontend-tests.result }}" == "skipped" ]; then
+            echo "- ⏭️ Frontend Tests: **SKIPPED** (no changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Frontend Tests: **FAILED**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Overall Status" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.frontend-tests.result }}" != "failure" ]; then
+            echo "🎉 **All tests passed!** The code is ready for merge." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Some tests failed.** Please review and fix the issues before merging." >> $GITHUB_STEP_SUMMARY
+          fi

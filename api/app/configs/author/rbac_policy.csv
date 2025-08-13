@@ -1,0 +1,22 @@
+p, role:user, /v0/authen/*, (GET)|(POST)
+p, role:user, /v0/users/me/, (GET)|(PUT)
+p, role:user, /v0/users/{id}/, GET
+p, role:user, /v0/users/two-factor/*, (GET)|(POST)
+p, role:user, /v0/users/login-update/, POST
+p, role:user, /v0/users/open/, POST
+p, role:user, /v0/items/, GET
+p, role:user, /v0/items/{id}/, GET
+p, role:admin, /v0/users/, (GET)|(POST)
+p, role:admin, /v0/users/{id}/, (GET)|(PUT)
+p, role:admin, /v0/users/{id}/status/, PUT
+p, role:admin, /v0/items/, (GET)|(POST)
+p, role:admin, /v0/items/{id}/, (GET)|(PUT)|(DELETE)
+p, role:admin, /v0/author/roles/*, (GET)|(POST)|(DELETE)
+p, role:superuser, /v0/author/policy/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role:superuser, /v0/author/policies/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role:superuser, /v0/author/group/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role:superuser, /v0/author/groups/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role:superuser, /v0/test-common/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role:superuser, /v0/test-task/*, (GET)|(POST)|(PUT)|(DELETE)
+g, role:admin, role:user
+g, role:superuser, role:admin
