@@ -15,3 +15,17 @@ CashLens is a monorepo for a private finance dashboard and its FastAPI backend. 
 - Preserve financial correctness across boundaries: backend `Decimal`/PostgreSQL numeric values and bigint identifiers must not be silently coerced to JavaScript numbers; group totals by currency and keep business arithmetic server-side.
 - Keep Money Lover credentials, raw provider payloads, and private sample data server-side. Use sanitized, contract-backed fixtures for browser mocks and tests.
 - Keep each package’s lockfile with its manifest. Start the local backend stack from the repository root with `make up`; run frontend package commands from `web/` with pnpm.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in this repository’s GitHub Issues via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The default five canonical triage labels are used. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses a multi-context domain-doc layout. See `docs/agents/domain.md`.
