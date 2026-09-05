@@ -1,0 +1,125 @@
+# CashLens frontend
+
+## Scope and source of truth
+
+Work in `web/` with pnpm; commit `package.json` and `pnpm-lock.yaml` together.
+This is a React + TypeScript Vite SPA for a private finance dashboard. The actual
+backend is async FastAPI + PostgreSQL in `../api/`, not the Go/SQLite stack imagined
+in `TECHSTACK.md`. Treat that file as architectural inspiration, not an API contract.
+
+Before implementing financial views, API models/mocks, connection settings, or sync
+status, read `../docs/database-design.md`: it defines the proposed schema, reporting
+rules, security boundaries, and unresolved provider semantics. It is a proposal,
+not evidence that financial endpoints or migrations already exist.
+
+## Packages and responsibilities
+
+Exact versions and executable scripts live in `package.json`.
+
+| Purpose | Installed packages / convention |
+| --- | --- |
+| Core | React 19, React DOM, TypeScript, Vite, `@vitejs/plugin-react` |
+| Routing | `@tanstack/react-router`, `@tanstack/router-plugin`; URL search params own shareable filters |
+| Server state | `@tanstack/react-query`; filter-aware query keys, mutations and invalidation |
+| API generation | Orval from the actual FastAPI OpenAPI contract; prefer Fetch transport |
+| Forms | React Hook Form, `@hookform/resolvers`, Zod |
+| Styling | Tailwind CSS v4, `@tailwindcss/vite`, `tw-animate-css` |
+| UI foundation | `@base-ui/react`, `class-variance-authority`, `clsx`, `tailwind-merge` for source-owned shadcn/ui components |
+| Visualization | Recharts; `@tanstack/react-table` for headless table logic |
+| Utilities | `date-fns` for display/date filters, `lucide-react` icons, Sonner toasts; native `Intl.NumberFormat` for currency display |
+| Unit/component tests | Vitest, Testing Library React/DOM/jest-dom/user-event, jsdom |
+| E2E / API mocks | `@playwright/test`, MSW |
+| Quality | Existing Oxlint retained; Prettier installed for formatting |
+
+Use component state for local UI. Add Zustand only for a demonstrated shared
+client-state need; keep API caching in Query and filters in the URL. Ky is an
+optional handwritten-client alternative, not installed alongside generated Fetch.
+
+Packages are installed, but the app remains the Vite starter: Router/Query providers,
+Tailwind integration, shadcn initialization/components, Orval config, test config,
+and formatting config are not yet wired. shadcn/ui is copied source, not a runtime
+package; initialize it with the Base UI option when adding components. Add scripts
+with their working configs rather than documenting nonexistent commands.
+
+## Project structure
+
+Current entry points are `src/main.tsx`, `src/App.tsx`, `src/index.css`, and
+`src/App.css`; `src/assets/` holds imported assets and `public/` holds static files.
+`index.html`, `vite.config.ts`, and `tsconfig*.json` configure the SPA/build.
+
+Grow toward this feature-based layout as implementation requires; these folders
+are planned, not already scaffolded:
+
+```text
+src/
+  app/                  # router, QueryClient, application providers
+  routes/               # thin TanStack file routes and layouts
+  features/
+    dashboard/          # feature-owned components, hooks, utilities
+    transactions/
+    wallets/
+    categories/
+    analytics/
+    settings/           # connection preferences and sync health
+  api/
+    generated/          # Orval output; regenerate rather than hand-edit
+    client.ts           # shared Fetch transport/auth/error behavior
+  components/
+    ui/                 # source-owned shadcn primitives
+    layout/             # shared navigation and page shell
+  lib/                  # currency/date/env helpers
+  stores/               # only if shared client state becomes necessary
+  types/                # shared non-generated types only
+  main.tsx
+  index.css
+e2e/                    # Playwright flows
+```
+
+Colocate unit/component tests with their subjects. Routes compose features; keep
+feature-specific hooks/components within the feature. Wire the Router Vite plugin
+before React when enabling file-based routing, and treat its route tree as generated.
+
+## Database design implications for the frontend
+
+- CashLens is a **read-only, one-way Money Lover mirror**. Imported transactions
+  are not locally editable ledger entries. Provider access and aggregation belong
+  in the backend; the browser calls owner-authorized CashLens endpoints.
+- Ownership: existing `user` → `moneylover_connection` → wallets. The MVP permits
+  one connection per user. Wallets own categories and transactions; categories are
+  wallet-scoped, including their hierarchy. Names and remote category IDs alone
+  are insufficient identity. Remote IDs are opaque strings.
+- `money_transaction` holds ordinary transactions, transfers, loans, borrowings,
+  repayments, and collections. Parent links connect settlements; related links
+  may connect transfer legs. Missing links remain unresolved, not fabricated.
+- `wallet_balance_snapshot` stores observed balances per wallet/currency/run.
+  Show observation times; missing balances are unknown, not zero or historical
+  end-of-day balances.
+- `sync_run`, `sync_scope`, and `sync_record` track attempts, coverage, and staged
+  or rejected records. Distinguish last attempt, last success, partial coverage,
+  freshness, and unresolved/rejected counts in the UI.
+- Money uses PostgreSQL `NUMERIC(24,8)` / backend Decimal, not the integer-money
+  assumption in `TECHSTACK.md`. Follow the actual API serialization, preserving
+  exact decimal values and bigint identifiers without unsafe JS number coercion.
+  Keep business arithmetic server-side; group totals by currency, with no implied
+  conversion from a display preference.
+- Income/expense reports include ready, active ordinary income/expense records
+  with `exclude_report=false`; transfers and debt movements are separate. Wallet
+  cash movement can include these excluded movements. `exclude_total` controls
+  wallet balance totals, not automatically spending charts.
+- Use `transaction_date` for accounting-day filters/grouping and half-open date
+  ranges. Preserve date-only values without accidental timezone shifts. Display
+  backend classifications rather than inferring direction from amount or name.
+- Keep provider credentials, raw payloads, and remote membership lists server-side.
+  Use synthetic/sanitized fixtures for MSW and tests; source samples contain private
+  financial data and the provider README contains exposed credentials.
+
+## Verification
+
+Run from `web/`: `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm lint`.
+There is no test suite or test script yet; installing tooling alone is not test
+coverage. Configure Vitest/jsdom and Playwright before adding their scripts; install
+Playwright browsers explicitly when E2E tests are introduced.
+
+`pnpm-workspace.yaml` records pnpm build-script decisions: esbuild is allowed for
+its platform binary setup; MSW's optional postinstall is denied. Initialize the
+MSW browser worker explicitly when browser mocking is configured.
