@@ -1,4 +1,6 @@
+import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Type
 
 from pydantic_settings import (
@@ -21,7 +23,12 @@ from .user import UserSettings
 
 __all__ = ["settings", "get_settings"]
 
-YAML_FILE_PATH = "/app/app/configs/config.yml"
+YAML_FILE_PATH = Path(
+    os.getenv(
+        "APP_CONFIG_FILE",
+        Path(__file__).resolve().parents[2] / "configs" / "config.yml",
+    )
+)
 
 
 class Settings(BaseSettings):

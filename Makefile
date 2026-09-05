@@ -1,4 +1,4 @@
-.PHONY: migration migrate up down
+.PHONY: migration migrate up down test-api-db-up test-api-db-down test-api test-api-unit test-api-db
 
 migration:
 	@echo "Running Alembic migration with message: '$(msg)'"
@@ -15,3 +15,18 @@ up:
 
 down:
 	@docker-compose -f docker-compose.dev.yml down
+
+test-api-db-up:
+	@docker compose -f api/compose.test.yaml up -d --wait
+
+test-api-db-down:
+	@docker compose -f api/compose.test.yaml down
+
+test-api:
+	@cd api && uv run pytest
+
+test-api-unit:
+	@cd api && uv run pytest -m unit
+
+test-api-db:
+	@cd api && uv run pytest -m "integration or api"

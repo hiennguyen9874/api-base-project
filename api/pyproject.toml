@@ -59,7 +59,9 @@ dependencies = [
 environments = [
     "sys_platform == 'linux'",
 ]
-dev-dependencies = [
+
+[dependency-groups]
+dev = [
     "black",
     "pylint",
     "flake8",
@@ -78,7 +80,34 @@ dev-dependencies = [
     "bandit",
     "loguru-mypy",
     "pytest",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.1.0",
+    "asgi-lifespan>=2.1.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--import-mode=importlib",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
+markers = [
+    "unit: tests without external services",
+    "integration: tests requiring PostgreSQL",
+    "api: HTTP API tests",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
 
 [build-system]
 requires = ["setuptools-cythonize", "setuptools", "wheel", "pip"]

@@ -20,6 +20,14 @@ This directory contains the async FastAPI service. Run API commands from the rep
 - Define Taskiq tasks with the broker in `app/core/messaging/taskiq_broker.py`. `app/worker.py` imports task modules and owns worker lifecycle; Compose runs `taskiq worker app.worker:broker app.src.tasks` and its scheduler counterpart.
 - Settings combine `__`-nested environment variables with `app/configs/config.yml`. The configured YAML path is `/app/app/configs/config.yml`, so container execution is the supported default. Use `.env.example` as the variable reference; never add secrets to configuration or logs.
 
+## Tests
+
+- Tests live in `tests/`: use `unit/` for tests without external services, `integration/` for PostgreSQL-backed repository/service tests, `api/` for HTTP tests, and `factories/` for reusable fixture factories.
+- PostgreSQL tests use `compose.test.yaml` and default to `postgresql+asyncpg://test:test@localhost:5433/cashlens_test`. Override this with `TEST_DATABASE_URL` when needed.
+- Database tests create the metadata schema once and run each test in an outer transaction. Keep `AsyncSession(..., join_transaction_mode="create_savepoint")` so application commits remain rollback-safe.
+- Async API tests use HTTPX `AsyncClient` with `ASGITransport`. The default clients do not run application lifespan because normal startup requires Redis and RabbitMQ; add a focused lifespan fixture when testing those integrations.
+- Mark tests with `unit`, `integration`, and/or `api`. Add targeted tests with behavior changes. See `tests/README.md` for details.
+
 ## Commands and checks
 
 ```bash
@@ -28,10 +36,14 @@ make up
 make down
 make migrate
 make migration msg="describe schema change"
+make test-api-db-up
+make test-api
+make test-api-db-down
+make test-api-unit
 pre-commit run --all-files --show-diff-on-failure --color=always
 ```
 
-`make up` runs the `prestart` service, which migrates, checks connections, and creates initial data. The configured pre-commit checks format/import cleanup, Ruff, mypy, and Bandit; Alembic is excluded, so inspect migration revisions manually. There is no checked-in API test suite or focused test command—add targeted tests with behavior changes, then run the relevant quality checks.
+`make up` runs the `prestart` service, which migrates, checks connections, and creates initial data. `make test-api` expects the test PostgreSQL container for integration tests; `make test-api-unit` does not. The configured pre-commit checks format/import cleanup, Ruff, mypy, and Bandit; Alembic is excluded, so inspect migration revisions manually.
 
 ## Conventions
 
