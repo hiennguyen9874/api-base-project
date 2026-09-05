@@ -1,0 +1,961 @@
+{
+  "error": 0,
+  "msg": "get_transaction_success",
+  "action": "transaction_list",
+  "data": {
+    "daterange": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-04"
+    },
+    "transactions": [
+      {
+        "_id": "f790fe6361b143faa411cc5dc68960d1",
+        "note": "Cơm trưa",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 45000,
+        "displayDate": "2026-09-04T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:03:36.038Z"
+      },
+      {
+        "_id": "edf912096c79450f9708688e04dfc7c3",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "cc3a31ed2beb4fcaa4938ce07ddef320",
+          "name": "Lương",
+          "icon": "ic_category_salary",
+          "type": 1,
+          "metadata": "salary0",
+          "categories": [
+            "5f15c8d137e841ef8fd2121495d2637f",
+            "5fa226afcabd4523b1f7d11b2a98a47b",
+            "881444fef3ab4ee3ba1ff44460accaf3",
+            "922f24c03665486dbd1df3850e56ae87"
+          ],
+          "parent": {
+            "_id": "bee5b2f00db24e8bbd2261e6aba9e3c5",
+            "name": "Thu nhập chính",
+            "icon": "icon_18",
+            "type": 1,
+            "metadata": ""
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 35156500,
+        "displayDate": "2026-09-04T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:04:53.775Z"
+      },
+      {
+        "_id": "aa0b00e96cec48729dd51da288a9bc1a",
+        "note": "Gửi đến Emergency",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "cef8ad661b1844d6a977f4e3517226f2",
+          "name": "Tiền chuyển đi",
+          "icon": "icon_142",
+          "type": 2,
+          "metadata": "IS_OUTGOING_TRANSFER",
+          "categories": [
+            "06f2a9fc1ee74fadb1a9244edefb7f28",
+            "284dad56cce341d4a97305615a48afa7",
+            "3e36f111c31743af8e6d5025b71c87ac",
+            "44dfebf9ec2f41e6956b51f3c7bef0c2",
+            "680f742f60ba4f349f6e473078240ed3",
+            "82022420ae744dc4a2eace6a7471c09c",
+            "b74f65b45f6c4b2e94c03eb5ab9c2b23",
+            "cf5e2f63a2304e63986fe5dc292eb45f"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 35000000,
+        "displayDate": "2026-09-04T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": true,
+        "images": [],
+        "metadata": "{}",
+        "related": "d636b2461b774ac6a43092293c08ca62",
+        "createdAt": "2026-09-04T08:07:36.348Z"
+      },
+      {
+        "_id": "5422c7c6c1e04bd5989f62717600e843",
+        "note": "Gửi đến Emergency",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "cef8ad661b1844d6a977f4e3517226f2",
+          "name": "Tiền chuyển đi",
+          "icon": "icon_142",
+          "type": 2,
+          "metadata": "IS_OUTGOING_TRANSFER",
+          "categories": [
+            "06f2a9fc1ee74fadb1a9244edefb7f28",
+            "284dad56cce341d4a97305615a48afa7",
+            "3e36f111c31743af8e6d5025b71c87ac",
+            "44dfebf9ec2f41e6956b51f3c7bef0c2",
+            "680f742f60ba4f349f6e473078240ed3",
+            "82022420ae744dc4a2eace6a7471c09c",
+            "b74f65b45f6c4b2e94c03eb5ab9c2b23",
+            "cf5e2f63a2304e63986fe5dc292eb45f"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 4000000,
+        "displayDate": "2026-09-04T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": true,
+        "images": [],
+        "metadata": "{}",
+        "related": "481e5eb024d7427aac9446e9c472061a",
+        "createdAt": "2026-09-04T07:46:19.409Z"
+      },
+      {
+        "_id": "296095be2bf247ed8c22e3d5a2255c8c",
+        "note": "Sáng",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 33000,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:04:37.448Z"
+      },
+      {
+        "_id": "eddabdb8646441dfac65e46dbe1b3181",
+        "note": "Cơm tối",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 40000,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:07:12.555Z"
+      },
+      {
+        "_id": "6a78da415ccf4d4bacef7bc5935966e6",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "ae8e084b41e5442c9058b2aab10e9d0c",
+          "name": "Hoá đơn internet",
+          "icon": "icon_126",
+          "type": 2,
+          "metadata": "internet0",
+          "parent": {
+            "_id": "d71e4469dd2d42e6bd8ba334444d4e14",
+            "name": "Hoá đơn & Tiện ích",
+            "icon": "icon_135",
+            "type": 2,
+            "metadata": "utilities0"
+          },
+          "categories": [
+            "3fff959696f7425da73466c043955673",
+            "76817dca987e486480de1f5152bdfe65",
+            "848c4d1b856c46cf9327dd2cf1761277",
+            "9ba48f36aff54869ae428c580ccbce1e"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 74806,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:03:20.824Z"
+      },
+      {
+        "_id": "be7868e554c049c6a17d1228c11b4fd7",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "1b5745cc6d1d43ada5ec7bdadbd62180",
+          "name": "Hoá đơn điện",
+          "icon": "icon_125",
+          "type": 2,
+          "metadata": "electricity0",
+          "parent": {
+            "_id": "d71e4469dd2d42e6bd8ba334444d4e14",
+            "name": "Hoá đơn & Tiện ích",
+            "icon": "icon_135",
+            "type": 2,
+            "metadata": "utilities0"
+          },
+          "categories": [
+            "8285222549e745edbb27aa5ba87bdad8",
+            "a046ea0cd3d24d0d8af9ea6b11986120",
+            "a20256dd31034b868c94908b9f9bab3a",
+            "ee7ae6d616284713a916d410076a8def"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 161530,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:03:06.967Z"
+      },
+      {
+        "_id": "d2b133dadf6a482b97f548588118d572",
+        "note": "Tiền điện ở nhà",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "ec0e0fa0595747ef84343f3bae43bdea",
+          "name": "Mua Đồ Cho Ba/Mẹ/Em",
+          "icon": "icon_1",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "3bc46fec994d4330b9df547fcc063ebf",
+            "4de333df32c44675baa52fc09f90b904",
+            "da72eae9788a44a5a51011b8676a8955",
+            "fea86af8b97343ebbf562ecd5a97a081"
+          ],
+          "parent": {
+            "_id": "dc825f8dfca1430d9a74f426a4964618",
+            "name": "Quà tặng & Quyên góp",
+            "icon": "ic_category_donations",
+            "type": 2,
+            "metadata": "gifts_donations0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 454313,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:02:49.211Z"
+      },
+      {
+        "_id": "c6c912f479f24b06bac28bd91ee50e82",
+        "note": "Cơm trưa",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 40000,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:02:11.611Z"
+      },
+      {
+        "_id": "aa75c002085e49969d5b332c25d68eab",
+        "note": "Tiền điện ở nhà",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "ec0e0fa0595747ef84343f3bae43bdea",
+          "name": "Mua Đồ Cho Ba/Mẹ/Em",
+          "icon": "icon_1",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "3bc46fec994d4330b9df547fcc063ebf",
+            "4de333df32c44675baa52fc09f90b904",
+            "da72eae9788a44a5a51011b8676a8955",
+            "fea86af8b97343ebbf562ecd5a97a081"
+          ],
+          "parent": {
+            "_id": "dc825f8dfca1430d9a74f426a4964618",
+            "name": "Quà tặng & Quyên góp",
+            "icon": "ic_category_donations",
+            "type": 2,
+            "metadata": "gifts_donations0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 59996,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:01:53.544Z"
+      },
+      {
+        "_id": "b24d1a45dd5d43f586e805fc2db3be55",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "612aacd4b6914778ae521a14bd2fbdb8",
+          "name": "Xăng dầu",
+          "icon": "icon_129",
+          "type": 2,
+          "metadata": "petrol0",
+          "categories": [
+            "32e6cf3c644e43f09f78ce15928f416a",
+            "6286b9a434934da393878d2ff75d92c0",
+            "7ccbed9296df49728ded124d732e3b09",
+            "7e80e1ddc3f4410ebbb5cdce76b0d718"
+          ],
+          "parent": {
+            "_id": "d71e4469dd2d42e6bd8ba334444d4e14",
+            "name": "Hoá đơn & Tiện ích",
+            "icon": "icon_135",
+            "type": 2,
+            "metadata": "utilities0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 50000,
+        "displayDate": "2026-09-03T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T07:45:49.886Z"
+      },
+      {
+        "_id": "a5ade01512bc4aaa95788a875923e111",
+        "note": "Plan q4 vs trà dâu",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "03e48175c44246e89788fc0292245507",
+          "name": "Ăn",
+          "icon": "icon_43",
+          "type": 2,
+          "metadata": "",
+          "parent": {
+            "_id": "167165a1d89b4cb891cd9643c511876a",
+            "name": "Yêu đương",
+            "icon": "icon_1",
+            "type": 2,
+            "metadata": ""
+          },
+          "categories": [
+            "3ee18746143940659a1d4acca3087a70",
+            "493ba5a4ba734d5e994a63c82cdaf4f8",
+            "649e915a6eff44c38ffb5947c514ecc0",
+            "68d026d72145401e9f7a8cb386c41706",
+            "69d6d227776a4ae19ff5c8bcfe7d4fff",
+            "d01d050a3f064c029dae419616bb6baa",
+            "d37b8682445f4217892727c6a5d31a35",
+            "e7922bf4653d4a819a892dfcd70be4ea"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 138000,
+        "displayDate": "2026-09-02T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-02T16:51:29.384Z"
+      },
+      {
+        "_id": "adbea9bb08bf4c4e8325821fbc27b45e",
+        "note": "Cơm truâ",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 54000,
+        "displayDate": "2026-09-02T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:01:21.867Z"
+      },
+      {
+        "_id": "d7630f2fef994fd89983dabb802f1d35",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "067a610cef3b4fadaffd9a30e8b0acb6",
+          "name": "Thuê nhà",
+          "icon": "icon_136",
+          "type": 2,
+          "metadata": "rentals0",
+          "parent": {
+            "_id": "d71e4469dd2d42e6bd8ba334444d4e14",
+            "name": "Hoá đơn & Tiện ích",
+            "icon": "icon_135",
+            "type": 2,
+            "metadata": "utilities0"
+          },
+          "categories": [
+            "75a0ccd6fef84e8e89e9a223e8f92f3f",
+            "ba3dd907c9b7453a94af86d46c9e167b",
+            "bc8b148467b54f899d40143b20e4da57",
+            "e2ec4db6f65c43cdbe96387b1a1f71ae"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 2833333,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-08-31T03:47:11.014Z"
+      },
+      {
+        "_id": "ae3af86f199f477d852cbf725de297b8",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "f080546d78384a739d7e581da0778148",
+          "name": "Khách sạn",
+          "icon": "icon_115",
+          "metadata": "",
+          "type": 2,
+          "parent": {
+            "_id": "167165a1d89b4cb891cd9643c511876a",
+            "name": "Yêu đương",
+            "icon": "icon_1",
+            "type": 2,
+            "metadata": ""
+          },
+          "categories": [
+            "1d3a2f5cf6834309bea59b546477df08",
+            "203e0bb173f8485cb8d776e2f00ce9a7",
+            "5398e5302571467db33f5a6a0fc0c0d6",
+            "61f7d46f0b004b6e9d920b7f00b763ef",
+            "6f36f21d5c2243f3a0a1596fa752d3f7",
+            "b1e724a8bb1f41e2b3ba15e6881b0066",
+            "d16e1d2fc8f244e18c9d20e82e4075ef",
+            "e1f819e35bbc4facbf2b2eeb86c8b89d"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 80000,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T07:45:38.761Z"
+      },
+      {
+        "_id": "cd5d75eb3c874b9ca6aac578c46a33b1",
+        "note": "Đi từ anh tuyên về",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "cb46acf5351144eba22a30160fd22837",
+          "name": "Taxi Or Xe Ôm",
+          "icon": "icon_127",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "1456f7e34d8c4d17b27c3e923c717494",
+            "186e8a9042064de2872895fa9761726c",
+            "41cffacd1f1849e2af0545670ee4ffc7",
+            "558509d579b14c89aaf8da5068afc10c"
+          ],
+          "parent": {
+            "_id": "d71e4469dd2d42e6bd8ba334444d4e14",
+            "name": "Hoá đơn & Tiện ích",
+            "icon": "icon_135",
+            "type": 2,
+            "metadata": "utilities0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 90000,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T07:57:54.540Z"
+      },
+      {
+        "_id": "ff0b2f9575ff4ca990417b3319d0a192",
+        "note": "Bún",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "8bd7335c8011411d9ea9692482b04a15",
+          "name": "Cơm Ba Bữa",
+          "icon": "icon_133",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "aaeed9bbda8e402ab9d72223ceb6d591",
+            "cc1cdf4157e942cb91b67ee36db863e8",
+            "ed3c2df30caf428ea8f53cab0dccc8f7",
+            "faa9886962e24e1d9c3b103c76ccd058"
+          ],
+          "parent": {
+            "_id": "ad4d831fc30d4b668aa8d3e4c609a55a",
+            "name": "Ăn uống",
+            "icon": "ic_category_foodndrink",
+            "type": 2,
+            "metadata": "foodndrink0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 70000,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T07:58:18.271Z"
+      },
+      {
+        "_id": "bb46063739944f798207d067be5bfd35",
+        "note": "",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "3bdbc09e5559432e86e5810b6629b915",
+          "name": "Cắt Tóc",
+          "icon": "icon_54",
+          "type": 2,
+          "metadata": "",
+          "categories": [
+            "623140514e1943a4952e1c6b1c33c915",
+            "6da39922af504bb8b210ce1c8be5e8c4",
+            "7a0cecc10a75451a8b0f175f2a198d49",
+            "a47460b2604547af98ccd05f92657b12"
+          ],
+          "parent": {
+            "_id": "a3aece26367e4af683f2da5b82804477",
+            "name": "Chăm sóc cá nhân",
+            "icon": "icon_132",
+            "type": 2,
+            "metadata": "personal_care0"
+          },
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 100000,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T07:58:25.546Z"
+      },
+      {
+        "_id": "33747c555181410891b12f24b5923ad2",
+        "note": "Q1",
+        "account": {
+          "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+          "name": "Daily",
+          "currency_id": 4,
+          "account_type": 0,
+          "icon": "/icon/icon_income/income_05"
+        },
+        "category": {
+          "_id": "03e48175c44246e89788fc0292245507",
+          "name": "Ăn",
+          "icon": "icon_43",
+          "type": 2,
+          "metadata": "",
+          "parent": {
+            "_id": "167165a1d89b4cb891cd9643c511876a",
+            "name": "Yêu đương",
+            "icon": "icon_1",
+            "type": 2,
+            "metadata": ""
+          },
+          "categories": [
+            "3ee18746143940659a1d4acca3087a70",
+            "493ba5a4ba734d5e994a63c82cdaf4f8",
+            "649e915a6eff44c38ffb5947c514ecc0",
+            "68d026d72145401e9f7a8cb386c41706",
+            "69d6d227776a4ae19ff5c8bcfe7d4fff",
+            "d01d050a3f064c029dae419616bb6baa",
+            "d37b8682445f4217892727c6a5d31a35",
+            "e7922bf4653d4a819a892dfcd70be4ea"
+          ],
+          "account": "7d761800aa2e41bda0a4cbb2a6ae1966"
+        },
+        "amount": 461150,
+        "displayDate": "2026-09-01T00:00:00.000Z",
+        "remind": 0,
+        "longtitude": 0,
+        "latitude": 0,
+        "with": [],
+        "campaign": [],
+        "lastEditBy": {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        },
+        "exclude_report": false,
+        "images": [],
+        "metadata": "{}",
+        "createdAt": "2026-09-04T08:04:20.134Z"
+      }
+    ]
+  }
+}

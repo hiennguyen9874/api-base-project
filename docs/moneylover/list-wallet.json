@@ -1,0 +1,215 @@
+{
+  "error": 0,
+  "msg": "get_list_account_success",
+  "action": "wallet_list",
+  "data": [
+    {
+      "_id": "7d761800aa2e41bda0a4cbb2a6ae1966",
+      "name": "Daily",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 0,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": false,
+      "icon": "/icon/icon_income/income_05",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2020-11-10T17:12:26.936Z",
+      "updateAt": "2023-10-30T15:46:43.498Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "8662031.00"
+        }
+      ]
+    },
+    {
+      "_id": "f46abfb49cf74faf88440ba9e62c61dd",
+      "name": "Emergency",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 2,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": false,
+      "icon": "icon_14",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2023-09-15T15:40:10.162Z",
+      "updateAt": "2023-10-30T15:46:41.412Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "30000000.00"
+        }
+      ]
+    },
+    {
+      "_id": "1b7a2b297fd94921b278ae97915703bd",
+      "name": "Invest",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 3,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": true,
+      "icon": "/icon/icon_income/income_12",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2021-03-15T07:31:19.405Z",
+      "updateAt": "2023-10-30T15:46:43.505Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "700119774.00"
+        }
+      ]
+    },
+    {
+      "_id": "7aa5afa8158d45aeafbf15b2f8050d49",
+      "name": "Sinking",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 1,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": false,
+      "icon": "icon_13",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2023-09-15T15:43:38.334Z",
+      "updateAt": "2023-10-30T15:46:43.510Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "0.00"
+        }
+      ]
+    },
+    {
+      "_id": "8b34f77fd0274a2c92c00d42d695450a",
+      "name": "Tiết Kiệm",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 4,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": true,
+      "icon": "icon_77",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2021-03-14T14:46:22.572Z",
+      "updateAt": "2023-10-30T15:46:43.501Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "0.00"
+        }
+      ]
+    },
+    {
+      "_id": "444e2066281e4648b2575534e88f3e7a",
+      "name": "Tiền Của Bố Mẹ",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 0,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": true,
+      "icon": "icon",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2025-01-28T04:21:33.204Z",
+      "updateAt": "2025-01-28T04:21:33.206Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "99890924.00"
+        }
+      ]
+    },
+    {
+      "_id": "5bdfb0e4003549b7b7dacd0a3a920500",
+      "name": "Tiền Của Huyền",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "isDelete": false,
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "icon": "icon",
+      "exclude_total": true,
+      "account_type": 0,
+      "archived": false,
+      "transaction_notification": false,
+      "sortIndex": 0,
+      "updateAt": "2026-08-30T16:34:46.750Z",
+      "createdAt": "2026-08-30T16:34:46.749Z",
+      "balance": [
+        {
+          "VND": "3000000.00"
+        }
+      ]
+    },
+    {
+      "_id": "d92dc93eb74546d3872339e49c98c6a6",
+      "name": "Tiền Của Phúc",
+      "currency_id": 4,
+      "owner": "5d879a20f0228c48ffafad1b",
+      "sortIndex": 0,
+      "transaction_notification": true,
+      "archived": false,
+      "account_type": 0,
+      "exclude_total": true,
+      "icon": "icon",
+      "listUser": [
+        {
+          "_id": "5d879a20f0228c48ffafad1b",
+          "email": "hiennguyen9874@gmail.com"
+        }
+      ],
+      "createdAt": "2025-01-28T04:21:09.827Z",
+      "updateAt": "2025-01-28T04:21:09.828Z",
+      "isDelete": false,
+      "balance": [
+        {
+          "VND": "46046795.00"
+        }
+      ]
+    }
+  ]
+}
