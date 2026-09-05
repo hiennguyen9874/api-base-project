@@ -4,12 +4,10 @@ from fastapi import Cookie, Depends, Header
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
-from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from app import errors as app_errors
-from app.core.auth.security import decode_token
 from app.core.settings import settings
 from app.src.dependencies import get_db
 from app.src.users.db_models import User
@@ -42,14 +40,6 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
 reusable_oauth2 = OAuth2PasswordBearerWithCookie(
     token_url=f"{settings.APP.API_PREFIX}/v0/authen/login"
 )
-
-
-def is_local_token(token: str) -> bool:
-    try:
-        decode_token(token, settings.TOKEN.ACCESS_TOKEN_SECRET_KEY)
-        return True
-    except InvalidTokenError:
-        return False
 
 
 async def get_current_user_from_oauth2(

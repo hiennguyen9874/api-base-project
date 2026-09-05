@@ -13,7 +13,6 @@ from app.core.messaging.emails import (
     verify_password_reset_token,
 )
 from app.core.settings import settings
-from app.src.service import ServiceBase
 from app.src.users import errors as users_errors
 from app.src.users.db_models import User
 from app.src.users.services import user_service, UserService
@@ -23,7 +22,7 @@ from . import schemas
 from .refresh_token_repository import refresh_token_repository, RefreshTokenRepository
 
 
-class AuthenService(ServiceBase):
+class AuthenService:
     def __init__(
         self,
         refresh_token_repository: RefreshTokenRepository,

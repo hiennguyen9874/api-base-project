@@ -7,14 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth.security import get_password_hash
 from app.core.messaging.emails import send_new_account_email
 from app.core.settings import settings
-from app.src.service import ServiceBase
 
 from .db_models import User
 from .db_repository import user_db_repository, UserDbRepository
 from .schemas import UserCreate, UserUpdate
 
 
-class UserService(ServiceBase):
+class UserService:
     def __init__(self, model: Type[User], db_repository: UserDbRepository) -> None:
         self.model = model
         self.db_repository = db_repository

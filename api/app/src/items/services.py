@@ -2,17 +2,13 @@ from typing import Any, Sequence, Type
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.src.service import ServiceBase
-
 from .db_models import Item
 from .db_repository import item_db_repository, ItemDbRepository
 from .schemas import ItemCreate, ItemUpdate
 
 
-class ItemService(ServiceBase):
-    def __init__(
-        self, model: Type[Item], db_repository: ItemDbRepository, service_name: str
-    ) -> None:
+class ItemService:
+    def __init__(self, model: Type[Item], db_repository: ItemDbRepository) -> None:
         self.model = model
         self.db_repository = db_repository
 
@@ -100,4 +96,4 @@ class ItemService(ServiceBase):
         )
 
 
-item_service = ItemService(model=Item, db_repository=item_db_repository, service_name="item")
+item_service = ItemService(model=Item, db_repository=item_db_repository)
