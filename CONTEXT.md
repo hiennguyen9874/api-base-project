@@ -55,3 +55,23 @@ _Avoid_: Complete history
 **Unresolved category**:
 A wallet-level reporting bucket for a transaction whose own classification is usable but whose category ancestry is missing or cyclic.
 _Avoid_: Uncategorized
+
+**Canonical transaction**:
+CashLens's accepted representation of one provider transaction, assembled under explicit source-precedence and classification rules while retaining contradictory source evidence separately.
+_Avoid_: Latest response, ledger entry
+
+**Source variant**:
+One endpoint's observed representation of a provider entity; multiple source variants may refer to the same canonical transaction without being interchangeable.
+_Avoid_: Duplicate transaction
+
+**Quarantined source record**:
+Retained source evidence that CashLens could not safely apply because it was malformed or materially contradicted another source variant.
+_Avoid_: Failed transaction, deleted record
+
+**Money Lover connection**:
+The association between one CashLens owner and one verified remote Money Lover identity. It owns imported evidence and synchronization history but does not retain a reusable Money Lover access token.
+_Avoid_: Saved login, wallet account
+
+**Synchronization run**:
+One explicit owner-requested attempt to import a selected synchronization mode, with durable progress and an outcome independent of previously accepted financial data.
+_Avoid_: Login session, report refresh
