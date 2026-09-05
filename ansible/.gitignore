@@ -1,8 +1,0 @@
-# Dynamically generated inventory files
-inventory/runtime.yml
-inventory/dynamic.yml
-
-# Temporary files
-*.tmp
-*.log
-.vault_password

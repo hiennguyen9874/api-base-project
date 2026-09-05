@@ -6,7 +6,6 @@ from app.schemas import ErrorResponse, ValidationErrorResponse
 from .authen.router import router as authen_router
 from .author.router import router as author_router
 from .items.router import router as items_router
-from .tests.router import router as tests_router
 from .users.router import router as users_router
 
 common_responses: dict[int | str, dict[str, Any]] | None = {
@@ -37,4 +36,3 @@ api_router.include_router(users_router, responses=common_responses)  # type: ign
 api_router.include_router(authen_router, responses=common_responses)  # type: ignore[arg-type]
 api_router.include_router(author_router, responses=common_responses)  # type: ignore[arg-type]
 api_router.include_router(items_router, responses=common_responses)  # type: ignore[arg-type]
-api_router.include_router(tests_router, responses=common_responses)

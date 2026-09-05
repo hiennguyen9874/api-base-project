@@ -60,8 +60,8 @@ jobs:
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: '[GitHub Action] Release version → ${{ inputs.version }}'
-          file_pattern: '**/version.py **/__init__.py **/package.json'
+          commit_message: "[GitHub Action] Release version → ${{ inputs.version }}"
+          file_pattern: "**/version.py **/__init__.py **/package.json"
 
   # Build Docker images in parallel
   build:
@@ -226,44 +226,3 @@ jobs:
           echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Release URL**: ${{ steps.release_drafter.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: Published (ready for production deployment)" >> $GITHUB_STEP_SUMMARY
-
-  # Deploy to production
-  deploy_production:
-    needs: [publish_release]
-    permissions:
-      contents: read
-      packages: read
-    uses: ./.github/workflows/deploy-to-server.yml
-    with:
-      environment: production
-      version: ${{ inputs.version }}
-      health_check_skip: false
-    secrets: inherit
-
-  # Post-deployment verification
-  verify_deployment:
-    needs: [deploy_production]
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Verify production deployment
-        run: |
-          echo "## ✅ Production Deployment Verification" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Successfully deployed and verified" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release**: Published and live" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Production Release Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "The new version is now live and available to users." >> $GITHUB_STEP_SUMMARY
-
-  # Notify deployment success
-  notify_success:
-    needs: [verify_deployment]
-    runs-on: ubuntu-22.04
-    if: success()
-    steps:
-      - name: Production deployment success notification
-        run: |
-          echo "🎉 Production deployment of ${{ inputs.version }} completed successfully!"
-          echo "All systems are operational and the new version is live."

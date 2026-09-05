@@ -1,4 +1,4 @@
-exclude: '(alembic|crawler/tcbs/.*|crawler/tcbs/init_data/.*)'
+exclude: '(alembic)'
 
 default_install_hook_types:
   - pre-commit

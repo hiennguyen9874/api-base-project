@@ -318,3 +318,5 @@ build
 # Custom file
 **/redash-images-*.tar
 .ansible/
+
+.pi/

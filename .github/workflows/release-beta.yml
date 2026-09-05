@@ -52,8 +52,8 @@ jobs:
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: '[GitHub Action] Update version → ${{ inputs.version }}'
-          file_pattern: '**/version.py **/__init__.py **/package.json'
+          commit_message: "[GitHub Action] Update version → ${{ inputs.version }}"
+          file_pattern: "**/version.py **/__init__.py **/package.json"
 
   # Build Docker images in parallel
   build:
@@ -207,34 +207,3 @@ jobs:
           echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Release URL**: ${{ steps.release_drafter.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: Draft (ready for deployment)" >> $GITHUB_STEP_SUMMARY
-
-  # Deploy to staging
-  deploy_staging:
-    needs: [publish_release]
-    permissions:
-      contents: read
-      packages: read
-    uses: ./.github/workflows/deploy-to-server.yml
-    with:
-      environment: staging
-      version: ${{ inputs.version }}
-      health_check_skip: false
-    secrets: inherit
-
-  # Post-deployment verification
-  verify_deployment:
-    needs: [deploy_staging]
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Verify deployment success
-        run: |
-          echo "## ✅ Deployment Verification" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Successfully deployed and verified" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Test the staging deployment" >> $GITHUB_STEP_SUMMARY
-          echo "2. Review the release notes" >> $GITHUB_STEP_SUMMARY
-          echo "3. Publish the release when ready" >> $GITHUB_STEP_SUMMARY

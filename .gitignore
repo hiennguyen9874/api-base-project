@@ -317,3 +317,5 @@ yarn-error.log*
 
 datas/
 .ansible/
+
+.pi/
