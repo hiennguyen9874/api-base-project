@@ -1,4 +1,5 @@
-exclude: '(alembic)'
+# Migration revisions are generated and must be reviewed manually.
+exclude: '^api/app/alembic/'
 
 default_install_hook_types:
   - pre-commit
@@ -23,6 +24,7 @@ repos:
     rev: v2.3.1
     hooks:
       - id: autoflake
+        files: ^api/
         args:
           [
             '--in-place',
@@ -38,19 +40,22 @@ repos:
     hooks:
       - id: isort
         args:
-          - --settings-path=./.isort.cfg
+          - --settings-path=api/.isort.cfg
           - --filter-files
+        files: ^api/
         name: isort (python)
       - id: isort
         args:
-          - --settings-path=./.isort.cfg
+          - --settings-path=api/.isort.cfg
           - --filter-files
+        files: ^api/
         name: isort (cython)
         types: [cython]
       - id: isort
         args:
-          - --settings-path=./.isort.cfg
+          - --settings-path=api/.isort.cfg
           - --filter-files
+        files: ^api/
         name: isort (pyi)
         types: [pyi]
 
@@ -84,10 +89,13 @@ repos:
     rev: v0.11.8
     hooks:
       - id: ruff-format
-        # types_or: [ python, pyi, jupyter ]
-      - id: ruff
-        # types_or: [ python, pyi, jupyter ]
+        files: ^api/
         args:
+          - --config=api/ruff.toml
+      - id: ruff
+        files: ^api/
+        args:
+          - --config=api/ruff.toml
           - --fix
           - --select=T20 # Enable the print statement check (T20)
 
@@ -95,8 +103,10 @@ repos:
     rev: v1.15.0
     hooks:
       - id: mypy
+        files: ^api/
+        exclude: ^api/setup\.py$
         args:
-          - --config-file=mypy.ini
+          - --config-file=api/mypy.ini
           - --explicit-package-bases
         additional_dependencies:
           - types-geoip2
@@ -167,7 +177,8 @@ repos:
     rev: '1.8.3'
     hooks:
       - id: bandit
-        args: ['-c', 'bandit.yaml', '-r', '.']
+        files: ^api/
+        args: ['-c', 'api/bandit.yaml']
 
   # - repo: https://github.com/hadolint/hadolint
   #   rev: v2.12.0

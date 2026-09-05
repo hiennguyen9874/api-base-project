@@ -1,4 +1,4 @@
-.PHONY: migration migrate up down test-api-db-up test-api-db-down test-api test-api-unit test-api-db
+.PHONY: migration migrate up down lint test-api-db-up test-api-db-down test-api test-api-unit test-api-db
 
 migration:
 	@echo "Running Alembic migration with message: '$(msg)'"
@@ -15,6 +15,9 @@ up:
 
 down:
 	@docker-compose -f docker-compose.dev.yml down
+
+lint:
+	@uv run --project api pre-commit run --all-files --show-diff-on-failure --color=always
 
 test-api-db-up:
 	@docker compose -f api/compose.test.yaml up -d --wait

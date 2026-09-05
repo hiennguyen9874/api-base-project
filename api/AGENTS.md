@@ -40,7 +40,7 @@ make test-api-db-up
 make test-api
 make test-api-db-down
 make test-api-unit
-pre-commit run --all-files --show-diff-on-failure --color=always
+uv run --project api pre-commit run --all-files --show-diff-on-failure --color=always
 ```
 
 `make up` runs the `prestart` service, which migrates, checks connections, and creates initial data. `make test-api` expects the test PostgreSQL container for integration tests; `make test-api-unit` does not. The configured pre-commit checks format/import cleanup, Ruff, mypy, and Bandit; Alembic is excluded, so inspect migration revisions manually.

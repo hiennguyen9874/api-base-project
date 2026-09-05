@@ -18,7 +18,7 @@ permissions:
 
 env:
   PYTHON_VERSION: '3.10'
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
 
 jobs:
   # Detect changes to determine which jobs to run
@@ -41,11 +41,8 @@ jobs:
             backend:
               - 'api/**'
               - '.pre-commit-config.yaml'
-              - 'mypy.ini'
-              - 'ruff.toml'
-              - 'bandit.yaml'
             frontend:
-              - 'frontend/**'
+              - 'web/**'
 
   # Backend code quality checks
   backend-quality:
@@ -62,28 +59,20 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache Python dependencies
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: api/uv.lock
+
+      - name: Cache pre-commit environments
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/pre-commit
-          key: backend-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '.pre-commit-config.yaml') }}
-          restore-keys: |
-            backend-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-
-
-      - name: Install system dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pre-commit pylint
-          mkdir -p ~/.local/bin
-          wget -O ~/.local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
-          chmod +x ~/.local/bin/hadolint
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
       - name: Run pre-commit hooks
-        run: |
-          pre-commit run --all-files --show-diff-on-failure --color=always
+        run: uv run --project api --locked pre-commit run --all-files --show-diff-on-failure --color=always
 
   # Frontend code quality checks
   frontend-quality:
@@ -95,26 +84,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+        working-directory: web
+        run: pnpm install --frozen-lockfile
 
-      - name: Run frontend linting
-        working-directory: frontend
+      - name: Run frontend checks
+        working-directory: web
         run: |
-          npm run lint
-          npm run format:check
-
-      - name: Run frontend type checking
-        working-directory: frontend
-        run: npm run type-check
+          pnpm lint
+          pnpm format:check
+          pnpm build
 
   # Security scanning
   security-scan:
@@ -151,7 +142,7 @@ jobs:
             path: api
             condition: ${{ needs.changes.outputs.backend == 'true' }}
           - language: javascript
-            path: frontend
+            path: web
             condition: ${{ needs.changes.outputs.frontend == 'true' }}
 
     steps:
@@ -172,18 +163,24 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Setup pnpm (for JavaScript analysis)
+        if: matrix.condition == 'true' && matrix.language == 'javascript'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js (for JavaScript analysis)
         if: matrix.condition == 'true' && matrix.language == 'javascript'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install dependencies (JavaScript)
         if: matrix.condition == 'true' && matrix.language == 'javascript'
-        working-directory: frontend
-        run: npm ci
+        working-directory: web
+        run: pnpm install --frozen-lockfile
 
       - name: Perform CodeQL Analysis
         if: matrix.condition == 'true'
