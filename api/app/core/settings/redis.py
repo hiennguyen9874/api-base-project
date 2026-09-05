@@ -34,6 +34,3 @@ class RedisCacheSettings(BaseModel):
             port=info.data["PORT"],
             path=str(info.data["DB"]),
         )
-
-    USER_TTL: int = 60 * 60
-    CASBIN_TTL: int = 60 * 60

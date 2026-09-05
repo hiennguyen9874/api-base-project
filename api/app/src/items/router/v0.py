@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.http.api_router import APIRouter
 from app.schemas import create_successful_response, SuccessfulResponse
-from app.src.authen.dependencies import get_current_active_authorized
+from app.src.authen.dependencies import get_current_active_user
 from app.src.dependencies import get_db
 from app.src.users.db_models import User
 from app.utils import get_limit_offset, get_params
@@ -17,7 +17,7 @@ from ..services import item_service
 
 router = APIRouter()
 
-CurrentUser = Annotated[User, Depends(get_current_active_authorized)]
+CurrentUser = Annotated[User, Depends(get_current_active_user)]
 Db = Annotated[AsyncSession, Depends(get_db)]
 
 

@@ -20,20 +20,20 @@ from app.src.users.services import user_service, UserService
 
 from . import errors as authen_errors
 from . import schemas
-from .cache_repository import authen_cache_repository, AuthenCacheRepository
+from .refresh_token_repository import refresh_token_repository, RefreshTokenRepository
 
 
 class AuthenService(ServiceBase):
     def __init__(
         self,
-        cache_repository: AuthenCacheRepository,
+        refresh_token_repository: RefreshTokenRepository,
         user_service: UserService,
     ) -> None:
-        self.cache_repository = cache_repository
+        self.refresh_token_repository = refresh_token_repository
         self.user_service = user_service
 
     async def recover_password(self, db: AsyncSession, email: str) -> None:
-        user = await self.user_service.get_by_email(db, cache_connection=None, email=email)
+        user = await self.user_service.get_by_email(db, email=email)
 
         if not user:
             raise errors.not_found(msg="User not exists")
@@ -47,7 +47,6 @@ class AuthenService(ServiceBase):
     async def reset_password(
         self,
         db: AsyncSession,
-        cache_connection: Redis,
         token: str,
         new_password: str,
     ) -> None:
@@ -55,20 +54,13 @@ class AuthenService(ServiceBase):
         if not email:
             raise authen_errors.invalid_reset_password_token(msg="Invalid reset password token")
 
-        user = await self.user_service.get_by_email(
-            db, cache_connection=cache_connection, email=email
-        )
+        user = await self.user_service.get_by_email(db, email=email)
         if not user:
             raise users_errors.user_not_found()
         if not user.is_active:
             raise authen_errors.inactive_user(msg="User inactive")
 
-        await self.user_service.update_password(
-            db,
-            cache_connection=cache_connection,
-            db_obj=user,
-            new_password=new_password,
-        )
+        await self.user_service.update_password(db, db_obj=user, new_password=new_password)
 
     def parse_token(self, token: str, secret_key: str) -> schemas.TokenPayload:
         try:
@@ -112,9 +104,7 @@ class AuthenService(ServiceBase):
         email: str,
         password: str,
     ) -> tuple[str, str, datetime, datetime]:
-        user = await self.user_service.get_by_email(
-            db, cache_connection=cache_connection, email=email
-        )
+        user = await self.user_service.get_by_email(db, email=email)
         if not user:
             raise users_errors.user_not_found()
 
@@ -131,25 +121,21 @@ class AuthenService(ServiceBase):
             refresh_token_expire,
         ) = await self.create_token(user=user)
 
-        await self.cache_repository.add_refresh_token(
+        await self.refresh_token_repository.add(
             connection=cache_connection,
-            obj_email=user.email,
-            refresh_token=refresh_token,
+            email=user.email,
+            token=refresh_token,
             expire=refresh_token_expire,
         )
 
         return access_token, refresh_token, access_token_expire, refresh_token_expire
 
-    async def get_user_from_token(
-        self, db: AsyncSession, cache_connection: Redis, token: str
-    ) -> User | None:
+    async def get_user_from_token(self, db: AsyncSession, token: str) -> User | None:
         token_data = self.parse_token(
             token=token, secret_key=settings.TOKEN.ACCESS_TOKEN_SECRET_KEY
         )
 
-        return await self.user_service.get_by_email(
-            db, cache_connection=cache_connection, email=str(token_data.sub)
-        )
+        return await self.user_service.get_by_email(db, email=str(token_data.sub))
 
     async def exchange_oidc_token(
         self,
@@ -163,10 +149,10 @@ class AuthenService(ServiceBase):
             refresh_token_expire,
         ) = await self.create_token(user=user)
 
-        await self.cache_repository.add_refresh_token(
+        await self.refresh_token_repository.add(
             connection=cache_connection,
-            obj_email=user.email,
-            refresh_token=refresh_token,
+            email=user.email,
+            token=refresh_token,
             expire=refresh_token_expire,
         )
 
@@ -182,22 +168,20 @@ class AuthenService(ServiceBase):
             token=old_refresh_token, secret_key=settings.TOKEN.REFRESH_TOKEN_SECRET_KEY
         )
 
-        if not await self.cache_repository.check_refresh_token(
+        if not await self.refresh_token_repository.check(
             connection=cache_connection,
-            obj_email=token_data.sub,
-            refresh_token=old_refresh_token,
+            email=token_data.sub,
+            token=old_refresh_token,
         ):
             raise authen_errors.refresh_token_not_found("not found refresh token in redis")
 
-        await self.cache_repository.delete_refresh_token(
+        await self.refresh_token_repository.delete(
             connection=cache_connection,
-            obj_email=token_data.sub,
-            refresh_token=old_refresh_token,
+            email=token_data.sub,
+            token=old_refresh_token,
         )
 
-        user = await self.user_service.get_by_email(
-            db, cache_connection=cache_connection, email=str(token_data.sub)
-        )
+        user = await self.user_service.get_by_email(db, email=str(token_data.sub))
         if not user:
             raise users_errors.user_not_found()
 
@@ -208,10 +192,10 @@ class AuthenService(ServiceBase):
             refresh_token_expire,
         ) = await self.create_token(user=user)
 
-        await self.cache_repository.add_refresh_token(
+        await self.refresh_token_repository.add(
             connection=cache_connection,
-            obj_email=token_data.sub,
-            refresh_token=refresh_token,
+            email=token_data.sub,
+            token=refresh_token,
             expire=refresh_token_expire,
         )
 
@@ -222,16 +206,16 @@ class AuthenService(ServiceBase):
             token=refresh_token, secret_key=settings.TOKEN.REFRESH_TOKEN_SECRET_KEY
         )
 
-        await self.cache_repository.delete_refresh_token(
+        await self.refresh_token_repository.delete(
             connection=cache_connection,
-            obj_email=token_data.sub,
-            refresh_token=refresh_token,
+            email=token_data.sub,
+            token=refresh_token,
         )
 
     async def logout_all(self, cache_connection: Redis, email: str) -> None:
-        await self.cache_repository.delete_all_refresh_token(
+        await self.refresh_token_repository.delete_all(
             connection=cache_connection,
-            obj_email=email,
+            email=email,
         )
 
     async def logout_all_with_token(self, cache_connection: Redis, refresh_token: str) -> None:
@@ -239,13 +223,13 @@ class AuthenService(ServiceBase):
             token=refresh_token, secret_key=settings.TOKEN.REFRESH_TOKEN_SECRET_KEY
         )
 
-        await self.cache_repository.delete_all_refresh_token(
+        await self.refresh_token_repository.delete_all(
             connection=cache_connection,
-            obj_email=token_data.sub,
+            email=token_data.sub,
         )
 
 
 authen_service = AuthenService(
-    cache_repository=authen_cache_repository,
+    refresh_token_repository=refresh_token_repository,
     user_service=user_service,
 )

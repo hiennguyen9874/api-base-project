@@ -1,19 +1,17 @@
 from typing import Annotated
 
-import casbin
 from fastapi import Cookie, Depends, Header
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
 from jwt.exceptions import InvalidTokenError
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from app import errors as app_errors
 from app.core.auth.security import decode_token
 from app.core.settings import settings
-from app.src.dependencies import get_async_cache, get_casbin_enforcer, get_db
+from app.src.dependencies import get_db
 from app.src.users.db_models import User
 
 from . import errors
@@ -56,14 +54,10 @@ def is_local_token(token: str) -> bool:
 
 async def get_current_user_from_oauth2(
     *,
-    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    async_cache: Annotated[Redis, Depends(get_async_cache)],
     token_oauth2: Annotated[str, Depends(reusable_oauth2)],
 ) -> User:
-    user = await authen_service.get_user_from_token(
-        db, cache_connection=async_cache, token=token_oauth2
-    )
+    user = await authen_service.get_user_from_token(db, token=token_oauth2)
     if not user:
         raise app_errors.not_found("not found user")
 
@@ -71,18 +65,11 @@ async def get_current_user_from_oauth2(
 
 
 async def get_current_user(
-    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    async_cache: Annotated[Redis, Depends(get_async_cache)],
     token_oauth2: Annotated[str | None, Depends(reusable_oauth2)],
 ) -> User:
     if token_oauth2 is not None:
-        return await get_current_user_from_oauth2(
-            request=request,
-            db=db,
-            async_cache=async_cache,
-            token_oauth2=token_oauth2,
-        )
+        return await get_current_user_from_oauth2(db=db, token_oauth2=token_oauth2)
 
     raise errors.not_authenticated("Not authenticated (oauth2)")
 
@@ -95,41 +82,15 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_active_authorized(
-    *,
-    request: Request,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    casbin_enforcer: Annotated[casbin.AsyncEnforcer, Depends(get_casbin_enforcer)],
-) -> User:
-    method = request.method
-    path = request.url.path.replace(f"{settings.APP.API_PREFIX}", "")
-
-    if not path.endswith("/"):
-        path = f"{path}/"
-
-    await casbin_enforcer.load_policy()
-    if not casbin_enforcer.enforce(current_user.email, path, method):
-        raise app_errors.forbidden("user doesn't have enough privileges")
-
-    return current_user
-
-
 async def get_current_media_user(
-    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    async_cache: Annotated[Redis, Depends(get_async_cache)],
     token_oauth2: Annotated[str | None, Depends(reusable_oauth2)],
 ) -> User | None:
     if not settings.APP.PROTECT_MEDIA:
         return None
 
     if token_oauth2 is not None:
-        return await get_current_user_from_oauth2(
-            request=request,
-            db=db,
-            async_cache=async_cache,
-            token_oauth2=token_oauth2,
-        )
+        return await get_current_user_from_oauth2(db=db, token_oauth2=token_oauth2)
 
     raise errors.not_authenticated("Not authenticated (oidc, oauth2)")
 

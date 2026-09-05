@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-This is an async FastAPI base application backed by PostgreSQL (through PgBouncer), Redis-compatible cache/locks, RabbitMQ/Taskiq workers, and Casbin authorization. `api/app/main.py` creates the application; `core/app_factory.py` wires lifespan, middleware, handlers, static files, Taskiq, and the `/api` router. Feature routes should flow through schemas and services to repositories rather than directly owning persistence logic.
+This is an async FastAPI base application backed by PostgreSQL (through PgBouncer), Redis-compatible token storage/locks, and RabbitMQ/Taskiq workers. `api/app/main.py` creates the application; `core/app_factory.py` wires lifespan, middleware, handlers, static files, Taskiq, and the `/api` router. Feature routes should flow through schemas and services to repositories rather than directly owning persistence logic.
 
 ## Project Structure
 
-- `api/app/core/` — settings, connection lifecycle, HTTP plumbing, auth, messaging, and shared infrastructure.
-- `api/app/src/` — feature modules (`authen`, `users`, `items`, `author`); `route.py` aggregates their routers.
+- `api/app/core/` — settings, connection lifecycle, HTTP plumbing, authentication, messaging, and shared infrastructure.
+- `api/app/src/` — feature modules (`authen`, `users`, `items`); `route.py` aggregates their routers.
 - `api/app/schemas/` and `api/app/errors.py` — shared response envelopes and application errors.
 - `api/app/alembic/` — Alembic environment and migration revisions.
 - `docker-compose.dev.yml` — local API, worker, PostgreSQL/PgBouncer, Redis/Dragonfly, and RabbitMQ stack.
@@ -34,7 +34,7 @@ The configured quality command runs formatting, import cleanup, Ruff, mypy, and 
 - Use four-space Python indentation, type annotations, async handlers/services, and `Annotated[..., Depends(...)]` dependency aliases, as in `api/app/src/users/router/v0.py`.
 - Keep feature boundaries: router → service → database/cache repository. Use shared dependencies from `api/app/src/dependencies.py`, shared response helpers, and centralized errors/handlers.
 - Match Ruff/isort: Python 3.10, 100-character lines, `app` first-party imports, and complexity limit 8. Mypy disallows untyped function definitions and enables strict optional checks.
-- Preserve cache invalidation and Casbin policy updates when mutating users or authorization data.
+- Preserve refresh-token revocation state when changing authentication flows.
 
 ## Agent-Specific Notes
 

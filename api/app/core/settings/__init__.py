@@ -8,9 +8,7 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
-from .api import ApiSettings
 from .app import AppSettings
-from .casbin import CasbinSettings
 from .database import PostgresSettings, SQLAlchemySettings
 from .email import EmailSettings
 from .monitoring import SentrySettings
@@ -28,7 +26,6 @@ YAML_FILE_PATH = "/app/app/configs/config.yml"
 
 class Settings(BaseSettings):
     APP: AppSettings
-    API: ApiSettings = ApiSettings()
     RATELIMIT: RateLimitSettings = RateLimitSettings()
     TOKEN: TokenSettings = TokenSettings()
     EMAIL: EmailSettings = EmailSettings()
@@ -38,7 +35,6 @@ class Settings(BaseSettings):
     USER: UserSettings
     REDIS_CACHE: RedisCacheSettings = RedisCacheSettings()
     REDIS_LOCK: RedisLockSettings = RedisLockSettings()
-    CASBIN: CasbinSettings = CasbinSettings()
     TASKS: TasksSettings = TasksSettings()
     TASKIQ: TaskiqSettings
 

@@ -15,9 +15,6 @@ APP:
   MEDIA_ROOT: /app/media
   MEDIA_URL: /media
 
-API:
-  CREATE_CACHE_OBJECT_IMAGE: true
-
 RATELIMIT:
   REDIS_HOST: redis-cache
   REDIS_PORT: 6379
@@ -49,8 +46,6 @@ REDIS_CACHE:
   DB: 1
   API_MAX_CONNECTIONS: 20
   WORKER_MAX_CONNECTIONS: 10
-  USER_TTL: 3600
-  CASBIN_TTL: 3600
 
 SENTRY:
   DSN: http://d79bad5cc2a633a680679ba592bf17d6@10.1.1.41:9000/2
@@ -66,10 +61,5 @@ REDIS_LOCK:
   HOST: redis-cache
   PORT: 6379
   DB: 2
-
-CASBIN:
-  PATH_MODEL: /app/app/configs/author/casbin_model.conf
-  PATH_POLICY: /app/app/configs/author/rbac_policy.csv
-  DEFAULT_ROLE: role:data_admin
 
 TASKS: {}

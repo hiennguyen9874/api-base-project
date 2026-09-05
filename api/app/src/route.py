@@ -4,7 +4,6 @@ from app.core.http.api_router import APIRouter
 from app.schemas import ErrorResponse, ValidationErrorResponse
 
 from .authen.router import router as authen_router
-from .author.router import router as author_router
 from .items.router import router as items_router
 from .users.router import router as users_router
 
@@ -34,5 +33,4 @@ api_router = APIRouter(
 
 api_router.include_router(users_router, responses=common_responses)  # type: ignore[arg-type]
 api_router.include_router(authen_router, responses=common_responses)  # type: ignore[arg-type]
-api_router.include_router(author_router, responses=common_responses)  # type: ignore[arg-type]
 api_router.include_router(items_router, responses=common_responses)  # type: ignore[arg-type]

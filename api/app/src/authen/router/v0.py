@@ -190,17 +190,11 @@ async def reset_password(
     token: Annotated[str, Body()],
     new_password: Annotated[str, Body()],
     db: Db,
-    cache_connection: CacheConnection,
 ) -> Any:
     """
     Reset password.
     """
-    await authen_service.reset_password(
-        db,
-        cache_connection=cache_connection,
-        token=token,
-        new_password=new_password,
-    )
+    await authen_service.reset_password(db, token=token, new_password=new_password)
 
     return {"msg": "Password updated successfully"}
 

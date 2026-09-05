@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 import loguru
-from casbin.util.log import configure_logging
 from loguru import logger
 
 
@@ -100,10 +99,6 @@ class CustomizeLogger:
             "uvicorn",
             "uvicorn.access",
             "uvicorn.error",
-            "casbin",
-            "casbin.policy",
-            "casbin.enforcer",
-            "casbin.role",
             "elastic_transport",
             "elastic_transport.transport",
             "ray",
@@ -148,5 +143,4 @@ class CustomizeLogger:
 
 
 def make_customize_logger(path: Path) -> loguru.Logger:
-    configure_logging()
     return CustomizeLogger.make_logger(path)
