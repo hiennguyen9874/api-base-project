@@ -27,6 +27,7 @@ This directory contains the async FastAPI service. Run API commands from the rep
 - Database tests create the metadata schema once and run each test in an outer transaction. Keep `AsyncSession(..., join_transaction_mode="create_savepoint")` so application commits remain rollback-safe.
 - Async API tests use HTTPX `AsyncClient` with `ASGITransport`. The default clients do not run application lifespan because normal startup requires Redis and RabbitMQ; add a focused lifespan fixture when testing those integrations.
 - Mark tests with `unit`, `integration`, and/or `api`. Add targeted tests with behavior changes. See `tests/README.md` for details.
+- After an edit, run only the tests covering it and cap harness output, e.g. `cd api && uv run pytest tests/unit/test_foo.py -q --tb=short 2>&1 | tail -n 30`; a single DB-backed error already prints ~100 lines, and the full suite without PostgreSQL emits ~15k lines of repeated connection tracebacks. Start the test database (`make test-api-db-up`) before `make test-api` / `make test-api-db`, and tail those full runs the same way.
 
 ## Commands and checks
 

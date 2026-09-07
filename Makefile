@@ -44,10 +44,10 @@ test-api-db-down:
 	@docker compose -f api/compose.test.yaml down
 
 test-api:
-	@cd api && uv run pytest
+	@cd api && uv run pytest -q --tb=short
 
 test-api-unit:
-	@cd api && uv run pytest -m unit
+	@cd api && uv run pytest -q --tb=short -m unit
 
 test-api-db:
-	@cd api && uv run pytest -m "integration or api"
+	@cd api && uv run pytest -q --tb=short -m "integration or api"
