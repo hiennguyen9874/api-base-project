@@ -1,9 +1,11 @@
 import { defineConfig } from 'orval'
 
+const openApiTarget = process.env.CASHLENS_OPENAPI_URL ?? 'http://localhost:8000/openapi.json'
+
 export default defineConfig({
   cashlens: {
     input: {
-      target: 'http://localhost:8000/openapi.json',
+      target: openApiTarget,
     },
     output: {
       clean: true,

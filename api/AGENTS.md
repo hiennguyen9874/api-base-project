@@ -19,6 +19,7 @@ This directory contains the async FastAPI service. Run API commands from the rep
 - Authentication supports Bearer tokens and cookies. Refresh-token revocation is stored in Redis (`app/core/auth/refresh_token_repository.py`); preserve it when changing login, refresh, or logout flows.
 - Define Taskiq tasks with the broker in `app/core/messaging/taskiq_broker.py`. `app/worker.py` imports task modules and owns worker lifecycle; Compose runs `taskiq worker app.worker:broker app.src.tasks` and its scheduler counterpart.
 - Settings combine `__`-nested environment variables with `app/configs/config.yml`. The configured YAML path is `/app/app/configs/config.yml`, so container execution is the supported default. Use `.env.example` as the variable reference; never add secrets to configuration or logs.
+- For generated-client OpenAPI reads, start the Compose stack with root `make up` and use its published API port (`APP__API_PORT` in the active root `.env`). Do not run `uvicorn app.main:app` directly on the host: container paths, logging, static files, and inherited environment variables are not a supported host-serving contract.
 
 ## Tests
 

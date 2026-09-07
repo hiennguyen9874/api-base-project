@@ -15,6 +15,10 @@ CashLens is a monorepo for a private finance dashboard and its FastAPI backend. 
 - Keep Money Lover credentials, raw provider payloads, and private sample data server-side. Use sanitized, contract-backed fixtures for browser mocks and tests.
 - Keep each package’s lockfile with its manifest. Start the local backend stack from the repository root with `make up`; run frontend package commands from `web/` with pnpm.
 
+### Generated API client
+
+When a FastAPI contract changes, generate the client against the supported Compose API rather than a host `uvicorn` process. Start the stack with `make up`, wait for `http://localhost:<APP__API_PORT>/openapi.json` to respond, then run `cd web && CASHLENS_OPENAPI_URL=http://localhost:<APP__API_PORT>/openapi.json pnpm api:generate`. Use the value from the active root `.env`; `.env.example` maps the API to port `11112`. `CASHLENS_OPENAPI_URL` defaults to `http://localhost:8000/openapi.json` for existing local setups. Do not use host-only settings or logging overrides to serve OpenAPI.
+
 ## Agent skills
 
 ### Issue tracker
