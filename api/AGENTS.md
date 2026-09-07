@@ -55,4 +55,3 @@ make lint-isort lint-autoflake
 
 - Match existing four-space Python, full annotations, 100-column formatting, and Python 3.10 compatibility. Mypy disallows untyped function definitions.
 - Scope every persisted resource to the authenticated owner before reading or mutating it; do not let a convenient repository lookup bypass authorization.
-- The planned Money Lover domain is defined in `../docs/database-design.md`, not implemented API behavior. Read it before adding financial models, migrations, synchronization, or reporting; preserve `Decimal` precision and keep provider credentials/raw payloads server-side.

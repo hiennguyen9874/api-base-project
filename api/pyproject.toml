@@ -14,7 +14,7 @@ dependencies = [
     "email-validator>=2.2.0",
     "fastapi-mail>=1.4.2",
     "fastapi-pagination[sqlalchemy]>=0.12.34",
-    "fastapi[standard]==0.112.2",
+    "fastapi[standard]==0.128.0",
     "gunicorn>=23.0.0",
     "httpx[http2]>=0.28.1",
     "importlib-metadata>=8.5.0",

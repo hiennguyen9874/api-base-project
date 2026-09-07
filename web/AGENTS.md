@@ -2,9 +2,7 @@
 
 ## Scope and source of truth
 
-Work in `web/` with pnpm; commit `package.json` and `pnpm-lock.yaml` together. This is a React + TypeScript Vite SPA for a private finance dashboard. The actual backend is async FastAPI + PostgreSQL in `../api/`, not the Go/SQLite stack imagined in `TECHSTACK.md`. Treat that file as architectural inspiration, not an API contract.
-
-Before implementing financial views, API models/mocks, connection settings, or sync status, read `../docs/database-design.md`: it defines the proposed schema, reporting rules, security boundaries, and unresolved provider semantics. It is a proposal, not evidence that financial endpoints or migrations already exist.
+Work in `web/` with pnpm; commit `package.json` and `pnpm-lock.yaml` together. This is a React + TypeScript Vite SPA for a private finance dashboard. The actual backend is async FastAPI + PostgreSQL in `../api/`. Treat that file as architectural inspiration, not an API contract.
 
 ## Packages and responsibilities
 
