@@ -40,10 +40,15 @@ make test-api-db-up
 make test-api
 make test-api-db-down
 make test-api-unit
-uv run --project api pre-commit run --all-files --show-diff-on-failure --color=always
+make lint
+make lint-ruff [FILES=api/app/src/foo.py]
+make lint-format [FILES=api/app/src/foo.py]
+make lint-mypy [FILES=api/app/src/foo.py]
+make lint-bandit [FILES=api/app/src/foo.py]
+make lint-isort lint-autoflake
 ```
 
-`make up` runs the `prestart` service, which migrates, checks connections, and creates initial data. `make test-api` expects the test PostgreSQL container for integration tests; `make test-api-unit` does not. The configured pre-commit checks format/import cleanup, Ruff, mypy, and Bandit; Alembic is excluded, so inspect migration revisions manually.
+`make up` runs the `prestart` service, which migrates, checks connections, and creates initial data. `make test-api` expects the test PostgreSQL container for integration tests; `make test-api-unit` does not. Run linters from the repository root via `make lint` (full pre-commit) or `make lint-<ruff|format|mypy|bandit|isort|autoflake>` for a single pre-commit hook with the same config. After an edit, check only the files touched and cap harness output, e.g. `make lint-ruff FILES=api/app/src/foo.py 2>&1 | tail -n 40`; reserve full `make lint` for the final gate and tail it the same way, since its `--all-files --show-diff-on-failure --color=always` flags dump the whole-repo diff and ANSI codes into the log. Prefer these over bare `cd api && uv run <ruff|mypy|bandit|black>`, which drift from pre-commit config (missing binary/args) and `black` conflicts with the canonical `ruff-format`; Alembic is excluded, so inspect migration revisions manually.
 
 ## Conventions
 
