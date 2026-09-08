@@ -180,7 +180,7 @@ jobs:
     steps:
       - name: Create GitHub release
         id: release
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           version: ${{ env.RELEASE_TAG }}
           name: ${{ env.RELEASE_TAG }}
