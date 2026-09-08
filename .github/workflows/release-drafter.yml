@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Draft release
         id: release_drafter
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           publish: false
           disable-releaser: false
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Apply release labels
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           disable-releaser: true
           disable-autolabeler: false
