@@ -1,0 +1,9 @@
+{
+  "logger": {
+    "path": "/tmp/cashlens-tests/api.log",
+    "level": "warning",
+    "rotation": "10 MB",
+    "retention": "1 day",
+    "format": "{level} {name}:{function}:{line} - {message}"
+  }
+}

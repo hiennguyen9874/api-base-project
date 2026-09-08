@@ -1,0 +1,124 @@
+x-api-production: &api-production
+  image: ${API_IMAGE:-ghcr.io/hiennguyen9874/cashlens/api}:${IMAGE_TAG:?Set IMAGE_TAG to an immutable release tag}
+  build:
+    context: ./api
+    dockerfile: Dockerfile
+    target: production
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  prestart:
+    <<: *api-production
+
+  api:
+    <<: *api-production
+    environment:
+      TOKEN__COOKIE_SECURE: 'true'
+      TOKEN__COOKIE_SAMESITE: lax
+      APP__ENABLE_DOCS: ${PRODUCTION_ENABLE_DOCS:-false}
+    command:
+      - fastapi
+      - run
+      - --host=0.0.0.0
+      - --port=8000
+      - app/main.py
+      - --proxy-headers
+      - --workers=${API__CONCURRENCY:-2}
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${COMPOSE_PROJECT_NAME:-cashlens}_backend
+      traefik.http.routers.cashlens-api.rule: PathPrefix(`/api`) || PathPrefix(`/static`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || Path(`/openapi.json`) || Path(`/health`)
+      traefik.http.routers.cashlens-api.entrypoints: web
+      traefik.http.routers.cashlens-api.priority: '100'
+      traefik.http.services.cashlens-api.loadbalancer.server.port: '8000'
+
+  worker:
+    <<: *api-production
+
+  worker-beat:
+    <<: *api-production
+
+  frontend:
+    image: ${WEB_IMAGE:-ghcr.io/hiennguyen9874/cashlens/web}:${IMAGE_TAG:?Set IMAGE_TAG to an immutable release tag}
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ''
+        VITE_ENABLE_MSW: 'false'
+    restart: unless-stopped
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${COMPOSE_PROJECT_NAME:-cashlens}_edge
+      traefik.http.routers.cashlens-web.rule: PathPrefix(`/`)
+      traefik.http.routers.cashlens-web.entrypoints: web
+      traefik.http.routers.cashlens-web.priority: '1'
+      traefik.http.services.cashlens-web.loadbalancer.server.port: '8080'
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/]
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: '1'
+      EVENTS: '1'
+      INFO: '1'
+      NETWORKS: '1'
+      PING: '1'
+      SERVICES: '1'
+      VERSION: '1'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker-api
+    security_opt:
+      - no-new-privileges:true
+
+  proxy:
+    image: traefik:v3.6
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.constraints=Label(`com.docker.compose.project`,`${COMPOSE_PROJECT_NAME:-cashlens}`)
+      - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --log=true
+      - --ping=true
+    ports:
+      - ${APP__PORT:-11111}:80
+    networks:
+      - edge
+      - backend
+      - docker-api
+    depends_on:
+      - docker-socket-proxy
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      traefik.enable: 'true'
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      test: [CMD, traefik, healthcheck, --ping]
+
+networks:
+  edge:
+  docker-api:
+    internal: true

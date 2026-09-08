@@ -2,24 +2,28 @@ name: Release drafter
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main, develop]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-draft-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   draft_release:
+    name: Draft release
+    if: github.event_name == 'push' || github.base_ref == 'main'
     permissions:
       contents: write
       pull-requests: read
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       html_url: ${{ steps.release_drafter.outputs.html_url }}
-
     steps:
       - name: Draft release
         id: release_drafter
@@ -35,7 +39,23 @@ jobs:
       - name: Generate draft summary
         if: github.event_name == 'push'
         run: |
-          echo "## 📝 Release Draft Updated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Draft URL**: ${{ steps.release_drafter.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Ready for manual release" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Release Draft Updated" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Draft URL**: ${{ steps.release_drafter.outputs.html_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Status**: Ready for manual release" >> "$GITHUB_STEP_SUMMARY"
+
+  auto_label:
+    name: Auto-label pull request
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply release labels
+        uses: release-drafter/release-drafter@v6
+        with:
+          disable-releaser: true
+          disable-autolabeler: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

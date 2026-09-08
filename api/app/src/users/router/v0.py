@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.http.api_router import APIRouter
 from app.core.settings import settings
 from app.errors import api_disabled
-from app.schemas import create_successful_response, SuccessfulResponse
+from app.schemas import create_successful_response, ErrorResponse, SuccessfulResponse
 from app.src.authen.dependencies import get_current_active_user
 from app.src.dependencies import get_db
 from app.utils import get_limit_offset, get_params
@@ -87,7 +87,16 @@ async def update_user_me(
     )
 
 
-@router.get("/me", response_model=SuccessfulResponse[schemas.User])
+@router.get(
+    "/me",
+    response_model=SuccessfulResponse[schemas.User],
+    responses={
+        401: {
+            "model": ErrorResponse[str],
+            "description": "Not authenticated, or invalid or expired credentials",
+        },
+    },
+)
 async def read_user_me(
     *,
     current_user: CurrentUser,

@@ -33,14 +33,17 @@ async def app_exception_handler(request: Request, exc: errors.AppException) -> J
 async def validation_exception_handler(
     request: Request, exc: Union[RequestValidationError, ValidationError]
 ) -> JSONResponse:
-    """Handler for validation errors."""
+    """Return structural diagnostics without reflecting untrusted request data."""
+    diagnostics = [
+        {"type": error["type"], "msg": "Invalid request value"} for error in exc.errors()
+    ]
     return JSONResponse(
         content=ValidationErrorResponse[list[dict[str, Any]]](
             status=Status.error,
-            error=Error[list[dict[str, Any]]](code="422", message=exc.errors()),
+            error=Error[list[dict[str, Any]]](code="422", message=diagnostics),
             data=None,
         ).model_dump(),
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
     )
 
 

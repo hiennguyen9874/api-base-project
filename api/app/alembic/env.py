@@ -24,7 +24,8 @@ def get_url():
     return f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
 
-config.set_main_option("sqlalchemy.url", get_url())
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", get_url())
 
 # ------------------------------------------------------------#
 

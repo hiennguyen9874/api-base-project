@@ -1,6 +1,6 @@
 {
   "logger": {
-    "path": "/var/log/fastapi-base-project/prestart.log",
+    "path": "/var/log/cashlens/prestart.log",
     "level": "info",
     "rotation": "20 days",
     "retention": "1 months",

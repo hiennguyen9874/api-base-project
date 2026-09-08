@@ -1,0 +1,17 @@
+backend:
+  - 'api/**'
+  - 'Makefile'
+  - '.pre-commit-config.yaml'
+
+frontend:
+  - 'web/**'
+
+contract:
+  - 'api/**'
+  - 'web/orval.config.ts'
+  - 'web/package.json'
+  - 'web/pnpm-lock.yaml'
+  - 'web/src/api/generated/**'
+
+ci:
+  - '.github/**'

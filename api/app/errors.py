@@ -57,7 +57,7 @@ class ErrorCode(Enum):
         status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
     REQUEST_TIMEOUT = ("request_timeout", status.HTTP_408_REQUEST_TIMEOUT)
-    VALIDATION_ERROR = ("validation", status.HTTP_422_UNPROCESSABLE_ENTITY)
+    VALIDATION_ERROR = ("validation", status.HTTP_422_UNPROCESSABLE_CONTENT)
     FORBIDDEN = ("not_enough_privileges", status.HTTP_403_FORBIDDEN)
 
     # Application-specific errors
@@ -68,7 +68,7 @@ class ErrorCode(Enum):
     READ_UPLOADED_FILE_ERROR = ("read_uploaded_file", status.HTTP_403_FORBIDDEN)
     VALIDATION_DATETIME_ERROR = (
         "validation_datetime",
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
     )
 
 

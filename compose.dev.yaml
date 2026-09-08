@@ -1,0 +1,112 @@
+services:
+  prestart:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    image: cashlens-api:dev
+    volumes:
+      - ./api/app:/app/app
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    image: cashlens-api:dev
+    command: [fastapi, dev, --host=0.0.0.0, --port=8000, app/main.py]
+    ports:
+      - ${APP__API_PORT:-11112}:8000
+    volumes:
+      - ./api/app:/app/app
+
+  worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    image: cashlens-api:dev
+    volumes:
+      - ./api/app:/app/app
+
+  worker-beat:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    image: cashlens-api:dev
+    volumes:
+      - ./api/app:/app/app
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      target: development
+    command: >-
+      sh -c "pnpm install --frozen-lockfile &&
+      pnpm dev --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_BASE_URL: ''
+      VITE_DEV_PROXY_TARGET: http://api:8000
+      VITE_ENABLE_MSW: ${VITE_ENABLE_MSW:-false}
+    ports:
+      - ${FRONTEND_DEV_PORT:-5173}:5173
+    volumes:
+      - ./web:/app
+      - frontend-node-modules:/app/node_modules
+      - frontend-pnpm-store:/pnpm/store
+    networks:
+      - backend
+      - egress
+    depends_on:
+      api:
+        condition: service_healthy
+        restart: true
+    init: true
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:5173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+
+  pgadmin:
+    profiles: [tools]
+    image: dpage/pgadmin4:8
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN__EMAIL:-admin@localhost.test}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN__PASSWORD:-local-admin-password}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - 127.0.0.1:${PGADMIN__PORT:-5050}:80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redisinsight:
+    profiles: [tools]
+    image: redis/redisinsight:2.48
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:${REDISINSIGHT__PORT:-5540}:5540
+    volumes:
+      - redisinsight-data:/data
+    networks:
+      - backend
+
+volumes:
+  frontend-node-modules:
+  frontend-pnpm-store:
+  pgadmin-data:
+  redisinsight-data:
