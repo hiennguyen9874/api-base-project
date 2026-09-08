@@ -9,7 +9,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "authlib>=1.4.0",
     "bcrypt==4.0.1",
-    "click>=8.1.8",
+    "click>=8.5.0",
     "cython>=3.0.11",
     "email-validator>=2.2.0",
     "fastapi-mail>=1.4.2",
