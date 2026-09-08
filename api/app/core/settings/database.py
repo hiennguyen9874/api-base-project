@@ -10,13 +10,15 @@ from pydantic import (
     ValidationInfo,
 )
 
+from .development import ephemeral_development_secret
+
 
 class PostgresSettings(BaseModel):
     HOST: str = "db"
     PORT: int = 5432
-    USER: str
-    PASSWORD: str
-    DB: str
+    USER: str = "cashlens"
+    PASSWORD: str = Field(default_factory=ephemeral_development_secret)
+    DB: str = "cashlens"
     DATABASE_URI: Annotated[PostgresDsn | None, Field(validate_default=True)] = None
 
     @field_validator("DATABASE_URI", mode="after")

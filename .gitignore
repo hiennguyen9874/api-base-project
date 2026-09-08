@@ -228,6 +228,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+!.env.*.example
 .venv
 env/
 venv/
@@ -317,8 +320,5 @@ yarn-error.log*
 
 datas/
 .ansible/
-
-# Private Money Lover API captures (financial data and source identifiers)
-/docs/moneylover/private/
 
 .pi/

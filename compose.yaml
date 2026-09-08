@@ -1,0 +1,183 @@
+name: ${COMPOSE_PROJECT_NAME:-cashlens}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '2'
+
+x-healthcheck: &healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 10s
+
+x-api-environment: &api-environment
+  APP__NAME: ${APP__NAME:-CashLens}
+  APP__VERSION: ${APP__VERSION:-0.1.0}
+  APP__TIMEZONE: ${APP__TIMEZONE:-UTC}
+  APP__SECRET_KEY: ${APP__SECRET_KEY:?Set APP__SECRET_KEY in .env}
+  APP__CORS_ORIGINS: ${APP__CORS_ORIGINS:-http://localhost:5173}
+  APP__TRUSTED_HOST: ${APP__TRUSTED_HOST:-localhost,127.0.0.1,api}
+  APP__ENABLE_DOCS: ${APP__ENABLE_DOCS:-true}
+  TOKEN__ACCESS_TOKEN_SECRET_KEY: ${TOKEN__ACCESS_TOKEN_SECRET_KEY:?Set TOKEN__ACCESS_TOKEN_SECRET_KEY in .env}
+  TOKEN__REFRESH_TOKEN_SECRET_KEY: ${TOKEN__REFRESH_TOKEN_SECRET_KEY:?Set TOKEN__REFRESH_TOKEN_SECRET_KEY in .env}
+  TOKEN__COOKIE_SECURE: ${TOKEN__COOKIE_SECURE:-false}
+  TOKEN__COOKIE_SAMESITE: ${TOKEN__COOKIE_SAMESITE:-lax}
+  POSTGRES__USER: ${POSTGRES__USER:?Set POSTGRES__USER in .env}
+  POSTGRES__PASSWORD: ${POSTGRES__PASSWORD:?Set POSTGRES__PASSWORD in .env}
+  POSTGRES__DB: ${POSTGRES__DB:?Set POSTGRES__DB in .env}
+  POSTGRES__HOST: pgbouncer
+  POSTGRES__PORT: 5432
+  TASKIQ__BROKER_URL: ${TASKIQ__BROKER_URL:?Set TASKIQ__BROKER_URL in .env}
+  TASKIQ__RESULT_BACKEND: ${TASKIQ__RESULT_BACKEND:-redis://redis-cache:6379/0}
+  USER__OPEN_REGISTRATION: ${USER__OPEN_REGISTRATION:-false}
+  USER__FIRST_USER_EMAIL: ${USER__FIRST_USER_EMAIL:?Set USER__FIRST_USER_EMAIL in .env}
+  USER__FIRST_USER_PASSWORD: ${USER__FIRST_USER_PASSWORD:?Set USER__FIRST_USER_PASSWORD in .env}
+  USER__FIRST_USER_FULL_NAME: ${USER__FIRST_USER_FULL_NAME:-CashLens Owner}
+  SENTRY__DSN: ${SENTRY__DSN:-null}
+  SENTRY__ENVIRONMENT: ${SENTRY__ENVIRONMENT:-development}
+
+x-api-service: &api-service
+  image: ${API_IMAGE:-cashlens-api}:${IMAGE_TAG:-local}
+  environment:
+    <<: *api-environment
+  networks:
+    - backend
+    - egress
+  logging: *logging
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${POSTGRES__USER:?Set POSTGRES__USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD:?Set POSTGRES__PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES__DB:?Set POSTGRES__DB in .env}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    logging: *logging
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES__USER:?Set POSTGRES__USER in .env}
+      DB_PASSWORD: ${POSTGRES__PASSWORD:?Set POSTGRES__PASSWORD in .env}
+      DB_NAME: ${POSTGRES__DB:?Set POSTGRES__DB in .env}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      MAX_PREPARED_STATEMENTS: 100
+      AUTH_TYPE: scram-sha-256
+      AUTH_USER: ${POSTGRES__USER:?Set POSTGRES__USER in .env}
+      ADMIN_USERS: ${POSTGRES__USER:?Set POSTGRES__USER in .env}
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    logging: *logging
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -p 5432 -U "$$DB_USER" -d "$$DB_NAME"']
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ__USER:?Set RABBITMQ__USER in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ__PASS:?Set RABBITMQ__PASS in .env}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - backend
+    logging: *logging
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD-SHELL, rabbitmq-diagnostics -q ping]
+      start_period: 30s
+
+  redis-cache:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.18.1
+    restart: unless-stopped
+    ulimits:
+      memlock: -1
+    command: [--maxmemory=1gb, --proactor_threads=2, --cache_mode=true, --dbfilename=]
+    networks:
+      - backend
+    logging: *logging
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD-SHELL, /usr/local/bin/healthcheck.sh]
+
+  prestart:
+    <<: *api-service
+    restart: 'no'
+    command: [bash, /prestart.sh]
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  api:
+    <<: *api-service
+    restart: unless-stopped
+    command: [fastapi, run, --host=0.0.0.0, --port=8000, app/main.py, --proxy-headers, --workers=1]
+    expose:
+      - '8000'
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+        restart: true
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, curl, -fsS, http://localhost:8000/health]
+      start_period: 20s
+
+  worker:
+    <<: *api-service
+    restart: unless-stopped
+    command: [taskiq, worker, app.worker:broker, app.src.tasks]
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+        restart: true
+
+  worker-beat:
+    <<: *api-service
+    restart: unless-stopped
+    command: [taskiq, scheduler, app.worker:scheduler, app.src.tasks]
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+        restart: true
+
+networks:
+  backend:
+    internal: true
+  egress:
+
+volumes:
+  db-data:
+  rabbitmq-data:

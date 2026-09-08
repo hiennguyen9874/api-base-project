@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import tempfile
 from pathlib import Path
 
 import loguru
@@ -77,15 +78,26 @@ class CustomizeLogger:
 
         # Create a basic Loguru logging config
         logger.add(sys.stdout, enqueue=True, backtrace=True, level=level.upper(), format=format)
-        logger.add(
-            str(filepath),
-            rotation=rotation,
-            retention=retention,
-            enqueue=True,
-            backtrace=True,
-            level=level.upper(),
-            format=format,
-        )
+        try:
+            logger.add(
+                str(filepath),
+                rotation=rotation,
+                retention=retention,
+                enqueue=True,
+                backtrace=True,
+                level=level.upper(),
+                format=format,
+            )
+        except OSError:
+            logger.add(
+                str(Path(tempfile.gettempdir()) / "cashlens" / Path(filepath).name),
+                rotation=rotation,
+                retention=retention,
+                enqueue=True,
+                backtrace=True,
+                level=level.upper(),
+                format=format,
+            )
 
         # Prepare to incorporate python standard logging
         logging.basicConfig(handlers=[InterceptHandler()], level=0)

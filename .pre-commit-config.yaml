@@ -1,5 +1,5 @@
 # Migration revisions are generated and must be reviewed manually.
-exclude: '^api/app/alembic/|^web/public/'
+exclude: '^api/app/alembic/|^web/public/|^web/src/api/generated/'
 
 default_install_hook_types:
   - pre-commit

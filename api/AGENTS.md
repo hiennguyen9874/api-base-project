@@ -7,7 +7,7 @@ This directory contains the async FastAPI service. Run API commands from the rep
 ## Architecture
 
 - `app/main.py` creates the application and exposes `/health`; `app/core/app_factory.py` configures lifespan, middleware, exception handling, Swagger, static files, Taskiq, and the `/api` router.
-- `app/src/route.py` aggregates versioned feature routers. Features live under `app/src/<feature>/` (`router/`, `schemas.py`, `services.py`, `db_repository.py`, `db_models.py`, and feature errors as needed).
+- `app/src/route.py` aggregates versioned feature routers. Features live under `app/src/<feature>/` (`AGENTS.md`, `router/`, `schemas.py`, `services.py`, `db_repository.py`, `db_models.py`, and feature errors as needed).
 - Keep the request path explicit: router → service → database/cache repository. Routers validate and assemble responses; services own business rules; repositories own SQLAlchemy/Redis access.
 - Use the `get_db` and `get_async_cache` dependencies from `app/src/dependencies.py`; type dependencies with `Annotated[..., Depends(...)]`. Preserve async I/O through the stack.
 - Use shared response schemas in `app/schemas/` and raise centralized `app.errors` / feature error helpers so registered handlers produce the standard envelope.

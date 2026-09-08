@@ -6,7 +6,7 @@ CashLens is a monorepo for a private finance dashboard and its FastAPI backend. 
 
 - `api/` — async FastAPI, PostgreSQL/PgBouncer, Redis, RabbitMQ, and Taskiq workers. **For any API, database, migration, authentication, or task work, read `api/AGENTS.md`.**
 - `web/` — React + TypeScript Vite SPA. **For frontend, generated-client, test, or UI work, read `web/AGENTS.md`.**
-- `docker-compose.dev.yml` — local backend stack; `Makefile` — root Compose and Alembic commands.
+- `compose.yaml` plus `compose.dev.yaml` / `compose.prod.yaml` — shared, development, and production stacks; `Makefile` — root Compose and Alembic commands.
 
 ## Cross-cutting rules
 

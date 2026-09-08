@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.18.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -13,7 +14,8 @@
     "api:generate": "orval",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:real": "playwright test --config=playwright.real.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

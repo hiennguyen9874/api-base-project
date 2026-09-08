@@ -1,0 +1,113 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '11.18.0'
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository history
+        uses: trufflesecurity/trufflehog@v3.89.2
+        with:
+          extra_args: --results=verified,unknown
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            source-root: api
+          - language: javascript-typescript
+            source-root: web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          source-root: ${{ matrix.source-root }}
+
+      - name: Set up uv for Python analysis
+        if: matrix.language == 'python'
+        uses: astral-sh/setup-uv@v9
+        with:
+          python-version: '3.10'
+          enable-cache: true
+          cache-dependency-glob: |
+            api/pyproject.toml
+            api/uv.lock
+
+      - name: Set up pnpm for JavaScript analysis
+        if: matrix.language == 'javascript-typescript'
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Set up Node.js for JavaScript analysis
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install JavaScript dependencies
+        if: matrix.language == 'javascript-typescript'
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JavaScript sources
+        if: matrix.language == 'javascript-typescript'
+        working-directory: web
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:8000
+        run: pnpm build
+
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

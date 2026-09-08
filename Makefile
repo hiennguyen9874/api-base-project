@@ -1,20 +1,43 @@
-.PHONY: migration migrate up down lint lint-ruff lint-format lint-mypy lint-bandit lint-isort lint-autoflake test-api-db-up test-api-db-down test-api test-api-unit test-api-db
+DEV_ENV ?= .env
+PROD_ENV ?= .env.production
+COMPOSE_DEV := docker compose --env-file $(DEV_ENV) -f compose.yaml -f compose.dev.yaml
+COMPOSE_PROD := docker compose --env-file $(PROD_ENV) -f compose.yaml -f compose.prod.yaml
+
+.PHONY: migration migrate up down up-tools build-prod up-prod down-prod config-dev config-prod lint lint-ruff lint-format lint-mypy lint-bandit lint-isort lint-autoflake test-api-db-up test-api-db-down test-api test-api-unit test-api-db test-api-phase3
 
 migration:
 	@echo "Running Alembic migration with message: '$(msg)'"
-	@docker-compose -f docker-compose.dev.yml build prestart
-	@docker-compose -f docker-compose.dev.yml run --rm prestart alembic revision --autogenerate -m "$(msg)"
+	@$(COMPOSE_DEV) build prestart
+	@$(COMPOSE_DEV) run --rm prestart alembic revision --autogenerate -m "$(msg)"
 
 migrate:
 	@echo "Running Alembic migrate"
-	@docker-compose -f docker-compose.dev.yml build prestart
-	@docker-compose -f docker-compose.dev.yml run --rm prestart alembic upgrade head
+	@$(COMPOSE_DEV) build prestart
+	@$(COMPOSE_DEV) run --rm prestart alembic upgrade head
 
 up:
-	@docker-compose -f docker-compose.dev.yml up -d
+	@$(COMPOSE_DEV) up -d --build
 
 down:
-	@docker-compose -f docker-compose.dev.yml down
+	@$(COMPOSE_DEV) down
+
+up-tools:
+	@$(COMPOSE_DEV) --profile tools up -d
+
+build-prod:
+	@$(COMPOSE_PROD) build
+
+up-prod:
+	@$(COMPOSE_PROD) up -d
+
+down-prod:
+	@$(COMPOSE_PROD) down
+
+config-dev:
+	@$(COMPOSE_DEV) config --quiet
+
+config-prod:
+	@$(COMPOSE_PROD) config --quiet
 
 lint:
 	@uv run --project api pre-commit run --all-files --show-diff-on-failure --color=always

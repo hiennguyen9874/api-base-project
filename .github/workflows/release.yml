@@ -1,0 +1,203 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and publish (for example, v1.2.3)
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag format
+        env:
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "Invalid release tag: $TAG"
+            echo "Expected v1.2.3 or v1.2.3-beta.1"
+            exit 1
+          fi
+
+  build:
+    name: Build and publish API image
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout release tag
+        id: checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api
+          tags: |
+            type=raw,value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest,enable=${{ !contains(env.RELEASE_TAG, '-') }}
+            type=raw,value=stable,enable=${{ !contains(env.RELEASE_TAG, '-') }}
+          labels: |
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+            org.opencontainers.image.revision=${{ steps.checkout.outputs.commit }}
+
+      - name: Build and push API image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=api-release
+          cache-to: type=gha,mode=max,scope=api-release
+          provenance: mode=max
+          sbom: true
+
+      - name: Write build summary
+        run: |
+          {
+            echo "## API release image"
+            echo ""
+            echo "- **Tag**: ${{ env.RELEASE_TAG }}"
+            echo "- **Image**: ${{ steps.meta.outputs.tags }}"
+            echo "- **Digest**: ${{ steps.build.outputs.digest }}"
+            echo "- **Platforms**: linux/amd64, linux/arm64"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-web:
+    name: Build and publish frontend image
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout release tag
+        id: checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/web
+          tags: |
+            type=raw,value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest,enable=${{ !contains(env.RELEASE_TAG, '-') }}
+            type=raw,value=stable,enable=${{ !contains(env.RELEASE_TAG, '-') }}
+          labels: |
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+            org.opencontainers.image.revision=${{ steps.checkout.outputs.commit }}
+
+      - name: Build and push frontend image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_BASE_URL=
+            VITE_ENABLE_MSW=false
+          cache-from: type=gha,scope=web-release
+          cache-to: type=gha,mode=max,scope=web-release
+          provenance: mode=max
+          sbom: true
+
+      - name: Write build summary
+        run: |
+          {
+            echo "## Frontend release image"
+            echo ""
+            echo "- **Tag**: ${{ env.RELEASE_TAG }}"
+            echo "- **Image**: ${{ steps.meta.outputs.tags }}"
+            echo "- **Digest**: ${{ steps.build.outputs.digest }}"
+            echo "- **Platforms**: linux/amd64, linux/arm64"
+            echo "- **API topology**: same-origin /api"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish GitHub release
+    needs: [build, build-web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Create GitHub release
+        id: release
+        uses: release-drafter/release-drafter@v6
+        with:
+          version: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          tag: ${{ env.RELEASE_TAG }}
+          commitish: ${{ env.RELEASE_TAG }}
+          publish: true
+          disable-releaser: false
+          disable-autolabeler: true
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write release summary
+        run: |
+          {
+            echo "## Release published"
+            echo ""
+            echo "- **Tag**: ${{ env.RELEASE_TAG }}"
+            echo "- **URL**: ${{ steps.release.outputs.html_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

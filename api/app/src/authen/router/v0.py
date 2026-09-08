@@ -12,6 +12,7 @@ from app.schemas import (
     create_successful_response,
     ErrorResponse,
     Msg,
+    SuccessfulResponse,
 )
 from app.src.dependencies import get_async_cache, get_db
 from app.src.users.db_models import User
@@ -28,14 +29,29 @@ router = APIRouter()
 Db = Annotated[AsyncSession, Depends(get_db)]
 CacheConnection = Annotated[Redis, Depends(get_async_cache)]
 
+unauthorized_responses: dict[int | str, dict[str, Any]] = {
+    401: {
+        "model": ErrorResponse[str],
+        "description": "Not authenticated, or invalid or expired credentials",
+    },
+}
+
 
 @router.post(
     "/login",
     response_model=schemas.Token,
     responses={
+        401: {
+            "model": ErrorResponse[str],
+            "description": "Incorrect email or password",
+        },
         403: {
             "model": ErrorResponse[str | dict[str, Any]],
             "description": "Inactive user or The user doesn't have enough privileges",
+        },
+        429: {
+            "model": ErrorResponse[str],
+            "description": "Too Many Requests",
         },
     },
 )
@@ -90,7 +106,11 @@ async def login_access_token(
     }
 
 
-@router.post("/refresh")
+@router.post(
+    "/refresh",
+    response_model=SuccessfulResponse[schemas.Token],
+    responses=unauthorized_responses,
+)
 async def refresh_token(
     response: Response,
     *,
@@ -136,7 +156,11 @@ async def refresh_token(
     )
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=unauthorized_responses,
+)
 async def logout(
     response: Response,
     *,

@@ -1,23 +1,27 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import AnyUrl, BaseModel, BeforeValidator
+from pydantic import AnyUrl, BaseModel, BeforeValidator, Field
 
 from .common_validators import parse_cors_origin, parse_trusted_host
+from .development import ephemeral_development_secret
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class AppSettings(BaseModel):
-    NAME: str = "fastapi-base-project"
+    NAME: str = "CashLens"
     VERSION: str = "0.0.1"
     TIMEZONE: str = "Asia/Ho_Chi_Minh"
-    SECRET_KEY: str = "secretsecretsecret"
+    SECRET_KEY: str = Field(default_factory=ephemeral_development_secret, min_length=32)
     API_PREFIX: str = "/api"
 
-    BASE_DIR: Path = Path("/app")
-    CONFIG_DIR: Path = Path("/app/app/configs")
-    STATIC_DIR: Path = Path("/app/app/static")
+    # Resolves to /app in the container and api/ when imported from a checkout.
+    BASE_DIR: Path = PROJECT_ROOT
+    CONFIG_DIR: Path = PROJECT_ROOT / "app" / "configs"
+    STATIC_DIR: Path = PROJECT_ROOT / "app" / "static"
 
-    MEDIA_ROOT: Path = Path("/app/media")
+    MEDIA_ROOT: Path = PROJECT_ROOT / "media"
     MEDIA_URL: str = "/media"
     PROTECT_MEDIA: bool = False
 

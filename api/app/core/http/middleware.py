@@ -9,7 +9,12 @@ from app.core.settings import settings
 def setup_middleware(app: FastAPI) -> None:
     """Configure all middleware for the application."""
     # Add session middleware
-    app.add_middleware(SessionMiddleware, secret_key=settings.APP.SECRET_KEY, https_only=True)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.APP.SECRET_KEY,
+        https_only=settings.TOKEN.COOKIE_SECURE,
+        same_site=settings.TOKEN.COOKIE_SAMESITE or "lax",
+    )
 
     # Add trusted host middleware
     app.add_middleware(
